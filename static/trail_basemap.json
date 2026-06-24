@@ -1,0 +1,25 @@
+{
+  "version": 8,
+  "name": "OpenTopoMap",
+  "metadata": {
+    "mapbox:autocomposite": false
+  },
+  "sources": {
+    "opentopomap": {
+      "type": "raster",
+      "tiles": ["https://tile.opentopomap.org/{z}/{x}/{y}.png"],
+      "tileSize": 256,
+      "maxzoom": 17,
+      "attribution": "© OpenTopoMap contributors · © OpenStreetMap contributors"
+    }
+  },
+  "layers": [
+    {
+      "id": "opentopomap",
+      "type": "raster",
+      "source": "opentopomap",
+      "minzoom": 0,
+      "maxzoom": 17
+    }
+  ]
+}

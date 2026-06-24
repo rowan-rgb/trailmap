@@ -1,0 +1,601 @@
+"""Interactive Cape Town map — trail topo view with trail pulse + Strava timeline."""
+
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+
+import pydeck as pdk
+
+CITY_MOBILITY_PULSE = {
+    "name": "city mobility pulse",
+    "latitude": -33.9249,
+    "longitude": 18.4241,
+    "color": [5, 80, 174],
+    "glow": [5, 80, 174, 60],
+}
+
+TRAIL_PULSE = {
+    "name": "trail pulse",
+    "latitude": -33.9628,
+    "longitude": 18.4098,
+    "color": [217, 119, 6],
+    "glow": [217, 119, 6, 60],
+}
+
+PULSES = [CITY_MOBILITY_PULSE, TRAIL_PULSE]
+TRAIL_BASEMAP = "/static/trail_basemap.json"
+
+MAP_CENTER_LAT = -33.944
+MAP_CENTER_LNG = 18.417
+ZOOM = 12.2
+PITCH = 0
+BEARING = 0
+
+HUD_HEAD = """
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/trail_pulse.js?v=28"></script>
+<style>
+  :root {
+    --term-green: #1a7f37;
+    --term-purple: #8250df;
+    --term-coral: #e85d75;
+    --term-teal: #0e8a94;
+    --term-bg: rgba(255, 255, 255, 0.92);
+    --term-border: rgba(130, 80, 223, 0.28);
+  }
+
+  body {
+    background: linear-gradient(135deg, #e8efe4 0%, #dfe9f0 50%, #e5ebe0 100%);
+    font-family: "JetBrains Mono", "IBM Plex Mono", "Courier New", monospace;
+  }
+
+  #deck-container {
+    filter: saturate(1.06) contrast(1.03) brightness(1.01);
+    position: relative;
+    transition: filter 0.65s ease;
+  }
+
+  #deck-container.trail-pulse-focus {
+    filter: saturate(0.82) contrast(1.12) brightness(0.42);
+  }
+
+  #deck-container.trail-pulse-focus::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 12;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.52) 100%),
+      rgba(8, 12, 24, 0.28);
+    transition: opacity 0.65s ease;
+  }
+
+  body.trail-pulse-focus {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0c1222 100%);
+  }
+
+  #route-stage {
+    position: fixed;
+    inset: 0;
+    pointer-events: none !important;
+    z-index: 15;
+  }
+
+  #route-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none !important;
+  }
+
+  #deck-container.trail-pulse-focus #route-stage {
+    filter: drop-shadow(0 0 6px rgba(252, 76, 2, 0.55)) drop-shadow(0 0 14px rgba(252, 76, 2, 0.25));
+  }
+
+  #route-stage.heatmap-interactive {
+    cursor: crosshair;
+  }
+
+  .route-detail {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--term-border);
+    max-height: 176px;
+    overflow: auto;
+  }
+
+  .strava-panel .segment-chip { font-size: 0.55rem; }
+
+  .run-card {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(252, 76, 2, 0.25);
+    background: rgba(252, 76, 2, 0.06);
+  }
+
+  .run-card--clickable {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .run-card--clickable:hover {
+    border-color: rgba(252, 76, 2, 0.55);
+    background: rgba(252, 76, 2, 0.12);
+  }
+
+  .run-card--active {
+    border-color: rgba(130, 80, 223, 0.55);
+    background: rgba(130, 80, 223, 0.08);
+  }
+
+  .run-card--active .run-card__name { color: #8250df; }
+
+  .segment-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin: 8px 0;
+  }
+
+  .segment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    color: var(--term-green);
+  }
+
+  .segment-chip--dim { opacity: 0.45; }
+
+  .segment-chip__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .segment-thresholds { margin-bottom: 8px; line-height: 1.45; }
+
+  .run-card__name {
+    color: #fc4c02;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  #deck-container::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.012) 0px,
+      rgba(0, 0, 0, 0.012) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  }
+
+  .hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+    color: var(--term-green);
+    font-size: 0.74rem;
+    line-height: 1.55;
+  }
+
+  .hud-panel {
+    position: absolute;
+    background: var(--term-bg);
+    border: 1px solid var(--term-border);
+    padding: 10px 14px;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .hud-panel--tl { top: 20px; left: 20px; font-size: 0.59rem; padding: 8px 11px; }
+  .hud-panel--br { bottom: 20px; right: 20px; min-width: 280px; }
+
+  .hud-panel--tl[hidden] { display: none; }
+
+  .hud-prompt { color: var(--term-purple); }
+  .hud-dim { color: #57606a; }
+  .hud-key { color: var(--term-coral); }
+  .hud-val { color: #0550ae; }
+  .hud-ok { color: var(--term-teal); }
+
+  .strava-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: min(304px, calc(100vw - 40px));
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    z-index: 30;
+    background: var(--term-bg);
+    border: 1px solid var(--term-border);
+    padding: 10px 11px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    pointer-events: auto;
+    font-size: 0.59rem;
+    line-height: 1.45;
+  }
+
+  .strava-panel[hidden] { display: none; }
+
+  .strava-panel__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .strava-panel__title { color: var(--term-purple); font-weight: 500; }
+
+  .strava-close,
+  .btn-primary,
+  .btn-secondary {
+    border: 1px solid var(--term-border);
+    background: white;
+    color: #57606a;
+    font-family: inherit;
+    font-size: 0.58rem;
+    cursor: pointer;
+    padding: 3px 8px;
+  }
+
+  .btn-primary {
+    background: #fc4c02;
+    color: white;
+    border-color: #fc4c02;
+    margin-top: 8px;
+  }
+
+  .btn-secondary { margin-top: 8px; }
+
+  .strava-link { color: #0550ae; text-decoration: none; }
+  .strava-link:hover { text-decoration: underline; }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .range-row input[type="date"] {
+    font-family: inherit;
+    font-size: 0.58rem;
+    border: 1px solid var(--term-border);
+    padding: 3px 5px;
+    flex: 1;
+  }
+
+  .player-controls {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .player-controls input[type="range"] { width: 100%; }
+
+  .timeline-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.52rem;
+    color: #57606a;
+    margin-top: 4px;
+  }
+
+  #timeline-label {
+    grid-column: 1 / -1;
+    font-size: 0.55rem;
+  }
+
+  #viz-charts {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 25;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    pointer-events: none;
+  }
+
+  #viz-charts[hidden] { display: none; }
+
+  #run-explorer-charts {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 25;
+    pointer-events: none;
+  }
+
+  #run-explorer-charts[hidden] { display: none; }
+
+  .chart-card--wide { height: 190px; }
+
+  .chart-card--wide canvas { height: 150px !important; }
+
+  .chart-card {
+    background: var(--term-bg);
+    border: 1px solid var(--term-border);
+    padding: 8px 10px 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    height: 160px;
+  }
+
+  .chart-card__title {
+    font-size: 0.68rem;
+    color: var(--term-purple);
+    margin-bottom: 4px;
+  }
+
+  .chart-card canvas { width: 100% !important; height: 120px !important; }
+
+  .mobility-activity__name { color: #0550ae; font-weight: 500; }
+
+  .maplibregl-ctrl-attrib,
+  .maplibregl-ctrl-attrib a {
+    font-family: "JetBrains Mono", monospace !important;
+    font-size: 10px !important;
+    color: #57606a !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  .deck-widget,
+  [class*="info-widget"],
+  [class*="InfoWidget"] {
+    display: none !important;
+  }
+
+  @media (max-width: 900px) {
+    #viz-charts { grid-template-columns: 1fr; }
+    .hud-panel--br { display: none; }
+  }
+</style>
+"""
+
+HUD_BODY = """
+<div class="hud">
+  <div class="hud-panel hud-panel--tl" id="hud-help">
+    <div><span class="hud-dim">click</span> <span class="hud-key">trail pulse</span></div>
+    <div><span class="hud-dim">click</span> <span class="hud-key">city mobility pulse</span></div>
+  </div>
+
+  <div class="hud-panel hud-panel--br">
+    <div><span class="hud-dim">viewport.</span><span class="hud-key">lat</span> = <span class="hud-val" id="hud-lat">{lat}</span></div>
+    <div><span class="hud-dim">viewport.</span><span class="hud-key">lng</span> = <span class="hud-val" id="hud-lng">{lng}</span></div>
+    <div><span class="hud-dim">viewport.</span><span class="hud-key">zoom</span> = <span class="hud-val" id="hud-zoom">{zoom}</span></div>
+    <div><span class="hud-dim">viewport.</span><span class="hud-key">pitch</span> = <span class="hud-val" id="hud-pitch">{pitch}</span></div>
+    <div class="hud-dim">basemap · OpenTopoMap</div>
+  </div>
+</div>
+
+<div id="route-stage" hidden>
+  <canvas id="route-overlay"></canvas>
+</div>
+
+<div id="strava-panel" class="strava-panel" hidden>
+  <div class="strava-panel__head">
+    <div class="strava-panel__title" id="pulse-panel-title">pulse.handler()</div>
+    <button type="button" class="strava-close" id="strava-close">close</button>
+  </div>
+  <div id="strava-content" class="hud-dim">awaiting click...</div>
+</div>
+
+<div id="viz-charts" hidden>
+  <div class="chart-card">
+    <div class="chart-card__title">cumulative distance (timeline)</div>
+    <canvas id="distance-chart"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card__title">cumulative elevation (timeline)</div>
+    <canvas id="elevation-chart"></canvas>
+  </div>
+</div>
+
+<div id="run-explorer-charts" hidden>
+  <div class="chart-card chart-card--wide">
+    <div class="chart-card__title" id="run-elevation-title">run elevation</div>
+    <canvas id="run-elevation-chart"></canvas>
+  </div>
+</div>
+"""
+
+HUD_SCRIPT = """
+    const ALL_PULSES = __PULSES_JSON__;
+    const hudLat = document.getElementById("hud-lat");
+    const hudLng = document.getElementById("hud-lng");
+    const hudZoom = document.getElementById("hud-zoom");
+    const hudPitch = document.getElementById("hud-pitch");
+    const stravaPanel = document.getElementById("strava-panel");
+    const stravaClose = document.getElementById("strava-close");
+    const hudHelp = document.getElementById("hud-help");
+
+    function hideHudHelp() {
+      if (hudHelp) hudHelp.hidden = true;
+    }
+
+    function showHudHelp() {
+      if (hudHelp) hudHelp.hidden = false;
+    }
+
+    function updateHud(viewState) {
+      if (!viewState) return;
+      hudLat.textContent = viewState.latitude.toFixed(4);
+      hudLng.textContent = viewState.longitude.toFixed(4);
+      hudZoom.textContent = viewState.zoom.toFixed(1);
+      hudPitch.textContent = Math.round(viewState.pitch || 0);
+    }
+
+    function updatePulseLayers(trailFocusActive) {
+      if (!deckInstance || !jsonInput || !jsonInput.layers) return;
+      const pulses = trailFocusActive
+        ? ALL_PULSES.filter(function (pulse) { return pulse.name === "trail pulse"; })
+        : ALL_PULSES;
+      const layers = jsonInput.layers.map(function (layer) {
+        if (layer["@@type"] !== "ScatterplotLayer") return layer;
+        return Object.assign({}, layer, { data: pulses });
+      });
+      deckInstance.setProps({ layers: layers });
+    }
+
+    window.updatePulseLayers = updatePulseLayers;
+
+    function handleCityMobilityPulseClick() {
+      hideHudHelp();
+      const title = document.getElementById("pulse-panel-title");
+      const content = document.getElementById("strava-content");
+      if (window.TrailPulseViz) TrailPulseViz.setFocus(false);
+      stravaPanel.hidden = false;
+      title.textContent = "city mobility pulse";
+      content.innerHTML =
+        '<div class="hud-dim"># module pending</div>' +
+        '<div class="mobility-activity__name">city mobility pulse</div>' +
+        '<div style="margin-top:8px">Mobility data integration coming soon.</div>';
+    }
+
+    stravaClose.addEventListener("click", function () {
+      stravaPanel.hidden = true;
+      showHudHelp();
+      if (window.TrailPulseViz) {
+        TrailPulseViz.stop();
+        TrailPulseViz.setFocus(false);
+      }
+    });
+
+    TrailPulseViz.init(deckInstance);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("strava") === "connected") {
+      hideHudHelp();
+      TrailPulseViz.open();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    deckInstance.setProps({
+      onViewStateChange: ({ viewState }) => {
+        updateHud(viewState);
+        TrailPulseViz.redrawRoutes();
+        return viewState;
+      },
+      onClick: (info) => {
+        if (!info.object) return;
+        if (info.object.name === "trail pulse") {
+          hideHudHelp();
+          TrailPulseViz.open();
+        } else if (info.object.name === "city mobility pulse") {
+          handleCityMobilityPulseClick();
+        }
+      },
+    });
+
+    updateHud(deckInstance.viewState || jsonInput.initialViewState);
+"""
+
+
+def _glow_layers() -> list[pdk.Layer]:
+    glow = pdk.Layer(
+        "ScatterplotLayer",
+        data=PULSES,
+        get_position=["longitude", "latitude"],
+        get_fill_color="glow",
+        get_radius=1800,
+        radius_min_pixels=14,
+        radius_max_pixels=48,
+        pickable=False,
+    )
+    core = pdk.Layer(
+        "ScatterplotLayer",
+        data=PULSES,
+        get_position=["longitude", "latitude"],
+        get_fill_color="color",
+        get_line_color=[255, 255, 255, 255],
+        get_radius=700,
+        radius_min_pixels=6,
+        radius_max_pixels=14,
+        line_width_min_pixels=2,
+        stroked=True,
+        pickable=True,
+    )
+    return [glow, core]
+
+
+def build_map() -> pdk.Deck:
+    view_state = pdk.ViewState(
+        latitude=MAP_CENTER_LAT,
+        longitude=MAP_CENTER_LNG,
+        zoom=ZOOM,
+        pitch=PITCH,
+        bearing=BEARING,
+        min_zoom=9,
+        max_zoom=17,
+    )
+
+    return pdk.Deck(
+        layers=_glow_layers(),
+        map_style=TRAIL_BASEMAP,
+        map_provider="carto",
+        initial_view_state=view_state,
+        tooltip={
+            "html": "<span style='font-family:monospace'>{name}</span><br/><span style='font-family:monospace;color:#57606a;font-size:11px'>click to open</span>",
+            "style": {"color": "#0550ae", "backgroundColor": "#ffffff"},
+        },
+    )
+
+
+def _inject_terminal_ui(html: str) -> str:
+    html = html.replace("<title>pydeck</title>", "<title>map_cape_town.py</title>")
+    html = re.sub(r'"description":\s*"[^"]*",?\n?', "", html)
+    html = re.sub(
+        r'\s*<script src="https://api\.tiles\.mapbox\.com/mapbox-gl-js/v1\.13\.0/mapbox-gl\.js"></script>\s*',
+        "\n",
+        html,
+    )
+    html = html.replace("</head>", f"{HUD_HEAD}</head>")
+    html = html.replace(
+        "<body>",
+        f"<body>{HUD_BODY.format(node_count=len(PULSES), lat=MAP_CENTER_LAT, lng=MAP_CENTER_LNG, zoom=ZOOM, pitch=PITCH)}",
+    )
+    html = re.sub(
+        r"(const deckInstance = createDeck\([\s\S]*?\);\s*)",
+        lambda m: m.group(1) + HUD_SCRIPT.replace("__PULSES_JSON__", json.dumps(PULSES)),
+        html,
+        count=1,
+    )
+    return html
+
+
+def main() -> None:
+    output = Path(__file__).resolve().parent / "output" / "cape_town_map.html"
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    build_map().to_html(str(output))
+    output.write_text(_inject_terminal_ui(output.read_text(encoding="utf-8")), encoding="utf-8")
+
+    print(f"Map saved to:\n  {output}")
+    print("\nRun the server for Strava:")
+    print("  python server.py")
+    print("  open http://localhost:5000")
+
+
+if __name__ == "__main__":
+    main()
