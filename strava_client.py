@@ -117,6 +117,12 @@ def get_valid_access_token() -> str | None:
     return refreshed["access_token"]
 
 
+def token_has_activity_scope(tokens: dict[str, Any] | None = None) -> bool:
+    payload = tokens or load_tokens() or {}
+    scope = str(payload.get("scope", ""))
+    return "activity:read_all" in scope or "activity:read" in scope
+
+
 def is_connected() -> bool:
     return get_valid_access_token() is not None
 
@@ -128,6 +134,8 @@ def can_read_activities(access_token: str) -> bool:
         params={"page": 1, "per_page": 1},
         timeout=30,
     )
+    if response.status_code == 429:
+        return token_has_activity_scope()
     return response.status_code == 200
 
 

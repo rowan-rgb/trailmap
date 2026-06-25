@@ -44,7 +44,16 @@
   let runDetailMode = false;
   let runExplorerIndex = -1;
   let runElevationChart = null;
+  let paceChart = null;
   let routeDetailClickBound = false;
+  let loadedRunsPayload = null;
+  let segmentAnalysisMode = false;
+  let stravaSegments = [];
+  let stravaSegmentsLoading = false;
+  let selectedStravaSegmentId = null;
+  let stravaSegmentEffortsIndex = null;
+  let paceChartPoints = [];
+  let segmentElevationChart = null;
 
   const SEGMENT_COLORS = {
     climbing: [130, 80, 223],
@@ -53,14 +62,15 @@
     high_power: [252, 76, 2],
   };
 
+  const STRAVA_SEGMENT_COLOR = [130, 80, 220];
+  const STRAVA_SEGMENT_ACTIVE_COLOR = [252, 76, 2];
+
   function defaultEndDate() {
-    return new Date().toISOString().slice(0, 10);
+    return "2026-06-30";
   }
 
   function defaultStartDate() {
-    const date = new Date();
-    date.setMonth(date.getMonth() - 6);
-    return date.toISOString().slice(0, 10);
+    return "2026-06-01";
   }
 
   function formatTimelineDate(ms) {
@@ -79,6 +89,42 @@
       minute: "2-digit",
     });
   }
+
+  function formatChartDate(ms) {
+    return new Date(ms).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  function formatPaceMinPerKm(paceMinPerKm) {
+    if (!Number.isFinite(paceMinPerKm) || paceMinPerKm <= 0) return "—";
+    const minutes = Math.floor(paceMinPerKm);
+    const seconds = Math.round((paceMinPerKm - minutes) * 60);
+    return minutes + ":" + String(seconds).padStart(2, "0") + " /km";
+  }
+
+  function computeRunPaceMinPerKm(run) {
+    const distKm = run.distance_km || 0;
+    if (distKm <= 0) return null;
+    const durationS = run.elapsed_s[run.elapsed_s.length - 1] || 0;
+    if (durationS <= 0) return null;
+    return durationS / 60 / distKm;
+  }
+
+  function computeRangePaceMinPerKm(run, startIdx, endIdx) {
+    const distM = run.distance_m[endIdx] - run.distance_m[startIdx];
+    const timeS = run.elapsed_s[endIdx] - run.elapsed_s[startIdx];
+    if (distM <= 10 || timeS <= 0) return null;
+    return timeS / 60 / (distM / 1000);
+  }
+
+  const ANALYSIS_SEGMENT_DEFS = [
+    { key: "climbing", label: "climbing", color: "#8250df" },
+    { key: "high_speed", label: "high speed", color: "#0550ae" },
+    { key: "high_hr", label: "high hr", color: "#e85d75", requires: "has_heartrate" },
+    { key: "high_power", label: "high power", color: "#fc4c02", requires: "has_power" },
+  ];
 
   function elevGainProfile(altitudeM) {
     const profile = [0];
@@ -205,13 +251,38 @@
     if (!panel || routeDetailClickBound) return;
     routeDetailClickBound = true;
     panel.addEventListener("click", function (event) {
+      if (event.target.closest("#change-range-btn")) {
+        resetToDateRangeForm();
+        return;
+      }
       if (event.target.closest("#run-explorer-back")) {
         closeRunExplorer();
         return;
       }
+      if (event.target.closest(".strava-segment-card[data-strava-segment-id]")) {
+        const card = event.target.closest(".strava-segment-card[data-strava-segment-id]");
+        if (segmentAnalysisMode) {
+          selectStravaSegment(Number(card.dataset.stravaSegmentId));
+        }
+        return;
+      }
+      if (event.target.closest("#mode-timeline-btn")) {
+        if (loadedRunsPayload) enterTimelineMode(loadedRunsPayload);
+        return;
+      }
+      if (event.target.closest("#mode-segment-btn")) {
+        if (loadedRunsPayload) enterSegmentAnalysisMode(loadedRunsPayload);
+        return;
+      }
+      if (event.target.closest("#switch-timeline-btn")) {
+        if (loadedRunsPayload) enterTimelineMode(loadedRunsPayload);
+        return;
+      }
       const card = event.target.closest(".run-card[data-run-index]");
-      if (!card || !timelineState) return;
-      openRunExplorer(Number(card.dataset.runIndex));
+      if (card && timelineState && !segmentAnalysisMode) {
+        openRunExplorer(Number(card.dataset.runIndex));
+        return;
+      }
     });
   }
 
@@ -424,6 +495,601 @@
     drawPath(run.path, run.color || SEGMENT_COLORS.high_power, 0.18, 2);
   }
 
+  function hideSegmentAnalysisCharts() {
+    const wrap = document.getElementById("segment-analysis-charts");
+    if (wrap) wrap.hidden = true;
+    if (paceChart) {
+      paceChart.destroy();
+      paceChart = null;
+    }
+    if (segmentElevationChart) {
+      segmentElevationChart.destroy();
+      segmentElevationChart = null;
+    }
+  }
+
+  function ensurePaceChart(points, title) {
+    const wrap = document.getElementById("segment-analysis-charts");
+    const timelineCharts = document.getElementById("viz-charts");
+    if (!wrap) return;
+    wrap.hidden = false;
+    if (timelineCharts) timelineCharts.hidden = true;
+
+    const titleEl = document.getElementById("segment-pace-chart-title");
+    if (titleEl) titleEl.textContent = title || "segment pace · time";
+
+    if (paceChart) {
+      paceChart.destroy();
+      paceChart = null;
+    }
+
+    paceChartPoints = points;
+
+    const axisFont = { family: "JetBrains Mono", size: 10 };
+    const axisColor = "#8b949e";
+    paceChart = new Chart(document.getElementById("segment-pace-chart").getContext("2d"), {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: "pace (min/km)",
+            data: points.map(function (point) {
+              return { x: point.tMs, y: point.paceMinPerKm };
+            }),
+            borderColor: "rgba(5,80,174,0.75)",
+            backgroundColor: "rgba(5,80,174,0.08)",
+            borderWidth: 1.5,
+            fill: true,
+            tension: 0.15,
+            pointRadius: points.length > 40 ? 0 : 4,
+            pointBackgroundColor: "rgba(5, 80, 174, 0.75)",
+            pointHoverRadius: 6,
+            pointHitRadius: 12,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        parsing: false,
+        onClick: function (event, elements) {
+          if (!segmentAnalysisMode || !elements.length) return;
+          const point = paceChartPoints[elements[0].index];
+          if (!point || point.runIndex == null) return;
+          const run = timelineState.runs[point.runIndex];
+          if (run) flyToBounds(boundsForPath(run.path), 900, 17, 0.08);
+        },
+        scales: {
+          x: {
+            type: "linear",
+            title: { display: true, text: "date →", font: axisFont, color: axisColor },
+            ticks: {
+              font: axisFont,
+              color: axisColor,
+              maxTicksLimit: 6,
+              callback: function (value) {
+                return formatChartDate(value);
+              },
+            },
+          },
+          y: {
+            reverse: false,
+            title: { display: true, text: "pace (min/km)", font: axisFont, color: axisColor },
+            ticks: {
+              font: axisFont,
+              color: axisColor,
+              callback: function (value) {
+                return formatPaceMinPerKm(value);
+              },
+            },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: function (items) {
+                const item = items[0];
+                if (!item || !item.raw) return "";
+                return formatChartDate(item.raw.x);
+              },
+              label: function (context) {
+                const index = context.dataIndex;
+                const point = points[index];
+                if (!point) return "";
+                return [
+                  point.label,
+                  "pace " + formatPaceMinPerKm(point.paceMinPerKm),
+                ];
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  function getSegmentElevationProfile(segmentId) {
+    if (!stravaSegmentEffortsIndex) return [];
+    const entry = stravaSegmentEffortsIndex[segmentId];
+    if (!entry || !entry.efforts.length) return [];
+    for (let i = entry.efforts.length - 1; i >= 0; i -= 1) {
+      const profile = entry.efforts[i].elevation_profile;
+      if (profile && profile.length >= 2) return profile;
+    }
+    return [];
+  }
+
+  function ensureSegmentElevationChart(segmentId, segmentName) {
+    const wrap = document.getElementById("segment-analysis-charts");
+    if (!wrap) return;
+
+    const profile = getSegmentElevationProfile(segmentId);
+    const titleEl = document.getElementById("segment-elevation-chart-title");
+    if (titleEl) {
+      titleEl.textContent = "segment elevation · " + (segmentName || "segment");
+    }
+
+    if (segmentElevationChart) {
+      segmentElevationChart.destroy();
+      segmentElevationChart = null;
+    }
+
+    if (!profile.length) return;
+
+    const data = profile.map(function (point) {
+      return {
+        x: Number((point.distance_m / 1000).toFixed(3)),
+        y: point.altitude_m,
+      };
+    });
+
+    segmentElevationChart = new Chart(
+      document.getElementById("segment-elevation-chart").getContext("2d"),
+      {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: "elevation (m)",
+              data: data,
+              borderColor: "#8250df",
+              backgroundColor: "rgba(130,80,223,0.12)",
+              fill: true,
+              tension: 0.2,
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          parsing: false,
+          scales: {
+            x: {
+              type: "linear",
+              title: {
+                display: true,
+                text: "distance (km)",
+                font: { family: "JetBrains Mono", size: 10 },
+                color: "#8b949e",
+              },
+              ticks: { font: { family: "JetBrains Mono", size: 10 }, color: "#8b949e" },
+            },
+            y: {
+              title: {
+                display: true,
+                text: "elevation (m)",
+                font: { family: "JetBrains Mono", size: 10 },
+                color: "#8b949e",
+              },
+              ticks: { font: { family: "JetBrains Mono", size: 10 }, color: "#8b949e" },
+            },
+          },
+          plugins: { legend: { display: false } },
+        },
+      }
+    );
+  }
+
+  function buildStravaSegmentEffortsIndex(runs) {
+    const bySegment = {};
+    runs.forEach(function (run) {
+      (run.segment_efforts || []).forEach(function (effort) {
+        const segmentId = effort.segment_id;
+        if (!segmentId) return;
+        if (!bySegment[segmentId]) {
+          bySegment[segmentId] = {
+            segment_id: segmentId,
+            segment_name: effort.segment_name || "Segment",
+            efforts: [],
+          };
+        }
+        const tMs = Date.parse(effort.start_date);
+        bySegment[segmentId].efforts.push({
+          runIndex: run.runIndex,
+          runName: run.name || "Run",
+          tMs: Number.isNaN(tMs) ? run.startMs : tMs,
+          paceMinPerKm: effort.pace_min_per_km,
+          elapsed_s: effort.elapsed_s,
+          distance_m: effort.distance_m,
+          pr_rank: effort.pr_rank,
+          elevation_profile: effort.elevation_profile || [],
+        });
+      });
+    });
+    Object.keys(bySegment).forEach(function (key) {
+      bySegment[key].efforts.sort(function (a, b) {
+        return a.tMs - b.tMs;
+      });
+    });
+    return bySegment;
+  }
+
+  function buildStravaSegmentPacePoints(segmentId) {
+    if (!stravaSegmentEffortsIndex) return [];
+    const entry = stravaSegmentEffortsIndex[segmentId];
+    if (!entry) return [];
+    return entry.efforts
+      .filter(function (effort) {
+        return effort.paceMinPerKm != null;
+      })
+      .map(function (effort) {
+        return {
+          tMs: effort.tMs,
+          paceMinPerKm: effort.paceMinPerKm,
+          label: effort.runName,
+          runIndex: effort.runIndex,
+        };
+      });
+  }
+
+  function findStravaSegmentAtCanvasPoint(x, y) {
+    if (!stravaSegments.length) return null;
+    let best = null;
+    stravaSegments.forEach(function (segment) {
+      if (!segment.path || segment.path.length < 2) return;
+      let bestDist = Infinity;
+      for (let i = 0; i < segment.path.length - 1; i += 1) {
+        const a = projectPoint(segment.path[i][0], segment.path[i][1]);
+        const b = projectPoint(segment.path[i + 1][0], segment.path[i + 1][1]);
+        if (!a || !b) continue;
+        bestDist = Math.min(bestDist, distToSegment(x, y, a.x, a.y, b.x, b.y));
+      }
+      if (bestDist <= ROUTE_CLICK_THRESHOLD_PX && (!best || bestDist < best.dist)) {
+        best = { segment: segment, dist: bestDist };
+      }
+    });
+    return best ? best.segment : null;
+  }
+
+  function drawSegmentAnalysisMap() {
+    if (!routeCtx || !routeCanvas || !timelineState) return;
+    ensureRouteCanvas();
+    showRouteCanvas();
+    routeCtx.clearRect(0, 0, routeCanvas.width, routeCanvas.height);
+
+    timelineState.runs.forEach(function (run) {
+      drawPath(run.path, [130, 130, 130], 0.16, 2);
+    });
+
+    stravaSegments.forEach(function (segment) {
+      if (!segment.path || segment.path.length < 2) return;
+      const selected = selectedStravaSegmentId === segment.id;
+      const color = selected ? STRAVA_SEGMENT_ACTIVE_COLOR : STRAVA_SEGMENT_COLOR;
+      drawPath(segment.path, color, selected ? 0.98 : 0.85, selected ? 6 : 4.5);
+    });
+  }
+
+  function renderSegmentAnalysisList() {
+    if (stravaSegmentsLoading) {
+      return '<div class="hud-dim">loading segments…</div>';
+    }
+
+    if (!stravaSegments.length) {
+      return '<div class="hud-dim">no Strava segments in your runs for this period</div>';
+    }
+
+    if (selectedStravaSegmentId) {
+      const segment = stravaSegments.find(function (item) {
+        return item.id === selectedStravaSegmentId;
+      });
+      const entry = stravaSegmentEffortsIndex
+        ? stravaSegmentEffortsIndex[selectedStravaSegmentId]
+        : null;
+      const efforts = entry ? entry.efforts : [];
+      return (
+        '<div class="hud-dim"># selected segment</div>' +
+        '<div class="run-card run-card--active">' +
+        '<div class="run-card__name">' +
+        escapeHtml((segment && segment.name) || (entry && entry.segment_name) || "Segment") +
+        "</div>" +
+        '<div class="hud-dim">' +
+        (segment ? segment.distance_km + " km" : "") +
+        (segment && segment.avg_grade != null ? " · " + segment.avg_grade + "% avg" : "") +
+        "</div>" +
+        '<div class="hud-dim">' +
+        efforts.length +
+        " run" +
+        (efforts.length === 1 ? "" : "s") +
+        " · pace and elevation below</div>" +
+        "</div>" +
+        '<div class="analysis-list">' +
+        efforts
+          .map(function (effort) {
+            return (
+              '<div class="run-card">' +
+              '<div class="run-card__name">' +
+              escapeHtml(effort.runName) +
+              "</div>" +
+              '<div class="hud-dim">' +
+              (effort.paceMinPerKm != null
+                ? "pace " + formatPaceMinPerKm(effort.paceMinPerKm)
+                : "pace n/a") +
+              (effort.elapsed_s ? " · " + Math.round(effort.elapsed_s / 60) + " min" : "") +
+              "</div>" +
+              '<div class="hud-dim">' +
+              formatTimelineDate(effort.tMs) +
+              (effort.pr_rank ? " · PR #" + effort.pr_rank : "") +
+              "</div>" +
+              "</div>"
+            );
+          })
+          .join("") +
+        "</div>"
+      );
+    }
+
+    return (
+      '<div class="hud-dim"># segments · ' +
+      stravaSegments.length +
+      " · click a segment on the map</div>" +
+      '<div class="analysis-list">' +
+      stravaSegments
+        .map(function (segment) {
+          const entry = stravaSegmentEffortsIndex
+            ? stravaSegmentEffortsIndex[segment.id]
+            : null;
+          const effortCount = entry ? entry.efforts.length : 0;
+          return (
+            '<div class="run-card run-card--clickable strava-segment-card" data-strava-segment-id="' +
+            segment.id +
+            '" role="button" tabindex="0">' +
+            '<div class="run-card__name">' +
+            escapeHtml(segment.name || "Segment") +
+            "</div>" +
+            '<div class="hud-dim">' +
+            segment.distance_km +
+            " km" +
+            (segment.avg_grade != null ? " · " + segment.avg_grade + "% avg" : "") +
+            " · " +
+            effortCount +
+            " run" +
+            (effortCount === 1 ? "" : "s") +
+            "</div>" +
+            "</div>"
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  function updateSegmentAnalysisView() {
+    if (!timelineState || !segmentAnalysisMode) return;
+    const list = document.getElementById("segment-analysis-list");
+    const summary = document.getElementById("segment-summary");
+    if (list) list.innerHTML = renderSegmentAnalysisList();
+    if (summary) {
+      summary.textContent =
+        stravaSegments.length +
+        " segments · " +
+        timelineState.runs.length +
+        " runs";
+    }
+    drawSegmentAnalysisMap();
+
+    if (selectedStravaSegmentId) {
+      const points = buildStravaSegmentPacePoints(selectedStravaSegmentId);
+      const segment = stravaSegments.find(function (item) {
+        return item.id === selectedStravaSegmentId;
+      });
+      const title = "segment pace · " + ((segment && segment.name) || "Strava segment");
+      ensurePaceChart(points, title);
+      ensureSegmentElevationChart(
+        selectedStravaSegmentId,
+        (segment && segment.name) || "segment"
+      );
+    } else {
+      hideSegmentAnalysisCharts();
+    }
+  }
+
+  function selectStravaSegment(segmentId) {
+    selectedStravaSegmentId = segmentId;
+    const segment = stravaSegments.find(function (item) {
+      return item.id === segmentId;
+    });
+    if (segment && segment.path && segment.path.length >= 2) {
+      flyToBounds(boundsForPath(segment.path), 700, 16, 0.1);
+    }
+    window.setTimeout(function () {
+      updateSegmentAnalysisView();
+    }, 400);
+  }
+
+  function loadStravaSegments() {
+    if (!timelineState) return Promise.resolve();
+
+    const segmentIds = [];
+    const seen = {};
+    timelineState.runs.forEach(function (run) {
+      (run.segment_efforts || []).forEach(function (effort) {
+        if (effort.segment_id && !seen[effort.segment_id]) {
+          seen[effort.segment_id] = true;
+          segmentIds.push(effort.segment_id);
+        }
+      });
+    });
+
+    stravaSegmentEffortsIndex = buildStravaSegmentEffortsIndex(timelineState.runs);
+
+    if (!segmentIds.length) {
+      stravaSegments = [];
+      stravaSegmentsLoading = false;
+      updateSegmentAnalysisView();
+      return Promise.resolve();
+    }
+
+    stravaSegmentsLoading = true;
+    updateSegmentAnalysisView();
+
+    const params = new URLSearchParams({
+      segment_ids: segmentIds.join(","),
+    });
+
+    return fetch("/api/strava/segments/from-runs?" + params.toString())
+      .then(function (response) {
+        return response.json().then(function (payload) {
+          if (!response.ok) {
+            throw new Error(payload.message || "Failed to load Strava segments.");
+          }
+          return payload;
+        });
+      })
+      .then(function (payload) {
+        stravaSegments = payload.segments || [];
+        stravaSegmentsLoading = false;
+        updateSegmentAnalysisView();
+      })
+      .catch(function (error) {
+        stravaSegmentsLoading = false;
+        const list = document.getElementById("segment-analysis-list");
+        if (list) {
+          list.innerHTML = renderError(String(error.message || error));
+        }
+      });
+  }
+
+  function resetLoadedRunsState() {
+    loadedRunsPayload = null;
+    segmentAnalysisMode = false;
+    stravaSegments = [];
+    stravaSegmentsLoading = false;
+    selectedStravaSegmentId = null;
+    stravaSegmentEffortsIndex = null;
+    paceChartPoints = [];
+    hideSegmentAnalysisCharts();
+    setRunAnalysisInteractive(false);
+  }
+
+  function resetToDateRangeForm() {
+    stopAnimation();
+    lastZoomedRunIndex = -1;
+    lastSnapshot = null;
+    heatmapMode = false;
+    runDetailMode = false;
+    runExplorerIndex = -1;
+    selectedRunIndices = [];
+    densityEdges = null;
+    timelineState = null;
+    resetLoadedRunsState();
+    hideRunElevationChart();
+    setHeatmapInteractive(false);
+    setRunAnalysisInteractive(false);
+    setMapFocusMode(true);
+    hideRouteCanvas();
+    document.getElementById("viz-charts").hidden = true;
+    const runCharts = document.getElementById("run-explorer-charts");
+    if (runCharts) runCharts.hidden = true;
+    if (distanceChart) {
+      distanceChart.destroy();
+      distanceChart = null;
+    }
+    if (elevGainChart) {
+      elevGainChart.destroy();
+      elevGainChart = null;
+    }
+    document.getElementById("strava-content").innerHTML = renderDateRangeForm();
+  }
+
+  function renderModePicker(payload) {
+    loadedRunsPayload = payload;
+    segmentAnalysisMode = false;
+    hideSegmentAnalysisCharts();
+    hideRouteCanvas();
+
+    const content = document.getElementById("strava-content");
+    const summary = payload.summary;
+    content.innerHTML =
+      '<div class="hud-ok">[ok]</div>' +
+      '<div class="hud-dim">' +
+      summary.run_count +
+      " runs · " +
+      summary.total_distance_km +
+      " km · +" +
+      (summary.total_elevation_gain_m || 0) +
+      " m gain</div>" +
+      '<div class="hud-dim mode-actions">choose view</div>' +
+      '<button type="button" class="btn-primary" id="mode-timeline-btn" style="display:block;width:100%">→ timeline</button>' +
+      '<button type="button" class="btn-secondary" id="mode-segment-btn" style="display:block;width:100%">→ segment analysis</button>' +
+      '<button type="button" class="btn-secondary" id="change-range-btn" style="margin-top:8px">change date range</button>';
+  }
+
+  function enterTimelineMode(payload) {
+    segmentAnalysisMode = false;
+    stravaSegments = [];
+    selectedStravaSegmentId = null;
+    setRunAnalysisInteractive(false);
+    hideSegmentAnalysisCharts();
+    renderPlayer(payload);
+  }
+
+  function enterSegmentAnalysisMode(payload) {
+    stopAnimation();
+    segmentAnalysisMode = true;
+    selectedStravaSegmentId = null;
+    stravaSegments = [];
+    stravaSegmentEffortsIndex = null;
+    heatmapMode = false;
+    runDetailMode = false;
+    runExplorerIndex = -1;
+    hideRunElevationChart();
+    setHeatmapInteractive(false);
+    setRunAnalysisInteractive(true);
+    ensureHeatmapClickHandler();
+
+    try {
+      timelineState = buildTimeline(payload.runs);
+    } catch (error) {
+      document.getElementById("strava-content").innerHTML =
+        renderError(String(error)) + renderDateRangeForm();
+      resetLoadedRunsState();
+      return;
+    }
+
+    timelineState.summary = payload.summary;
+    loadedRunsPayload = payload;
+
+    const content = document.getElementById("strava-content");
+    content.innerHTML =
+      '<div class="hud-dim"># segment analysis</div>' +
+      '<div id="segment-summary" class="hud-dim">' +
+      timelineState.runs.length +
+      " runs</div>" +
+      '<div class="hud-dim" style="margin-top:8px">click a segment on the map</div>' +
+      '<div id="segment-analysis-list"></div>' +
+      '<button type="button" class="btn-secondary" id="switch-timeline-btn" style="display:block;width:100%;margin-top:8px">→ timeline</button>' +
+      '<button type="button" class="btn-secondary" id="change-range-btn" style="margin-top:8px">change date range</button>';
+
+    fitAllRuns(timelineState.runs, 0);
+    document.getElementById("viz-charts").hidden = true;
+    loadStravaSegments();
+    window.setTimeout(function () {
+      ensureMapNavigationEnabled();
+    }, 350);
+  }
+
   function openRunExplorer(runIndex) {
     if (!timelineState || !heatmapMode) return;
     const run = timelineState.runs[runIndex];
@@ -468,6 +1134,11 @@
     if (stage) stage.classList.toggle("heatmap-interactive", active);
   }
 
+  function setRunAnalysisInteractive(active) {
+    const stage = document.getElementById("route-stage");
+    if (stage) stage.classList.toggle("heatmap-interactive", active);
+  }
+
   function handleHeatmapMapClick(x, y) {
     if (!heatmapMode || !timelineState || !routeCanvas) return;
     const runs = findRunsAtCanvasPoint(x, y);
@@ -480,14 +1151,23 @@
     drawHeatmap(timelineState.runs);
   }
 
+  function handleRouteOverlayClick(x, y) {
+    if (segmentAnalysisMode) {
+      const segment = findStravaSegmentAtCanvasPoint(x, y);
+      if (segment) selectStravaSegment(segment.id);
+      return;
+    }
+    if (heatmapMode) handleHeatmapMapClick(x, y);
+  }
+
   function ensureHeatmapClickHandler() {
     const container = document.getElementById("deck-container");
     if (container && !heatmapClickBound) {
       heatmapClickBound = true;
       container.addEventListener("click", function (event) {
-        if (!heatmapMode || !timelineState || !routeCanvas) return;
+        if ((!heatmapMode && !segmentAnalysisMode) || !timelineState || !routeCanvas) return;
         const rect = routeCanvas.getBoundingClientRect();
-        handleHeatmapMapClick(event.clientX - rect.left, event.clientY - rect.top);
+        handleRouteOverlayClick(event.clientX - rect.left, event.clientY - rect.top);
       });
     }
 
@@ -495,8 +1175,8 @@
     if (map && !map._trailHeatmapClickBound) {
       map._trailHeatmapClickBound = true;
       map.on("click", function (event) {
-        if (!heatmapMode || !timelineState || !routeCanvas) return;
-        handleHeatmapMapClick(event.point.x, event.point.y);
+        if ((!heatmapMode && !segmentAnalysisMode) || !timelineState || !routeCanvas) return;
+        handleRouteOverlayClick(event.point.x, event.point.y);
       });
     }
   }
@@ -707,6 +1387,10 @@
 
   function drawRoutes(snapshot) {
     if (!timelineState) return;
+    if (segmentAnalysisMode) {
+      drawSegmentAnalysisMap();
+      return;
+    }
     if (heatmapMode) {
       drawHeatmap(timelineState.runs);
       return;
@@ -999,11 +1683,12 @@
     if (!map._trailViewSyncBound) {
       map._trailViewSyncBound = true;
       map.on("move", function () {
-        if (!timelineState && !heatmapMode) return;
+        if (!timelineState && !heatmapMode && !segmentAnalysisMode) return;
         if (mapRedrawRaf) return;
         mapRedrawRaf = requestAnimationFrame(function () {
           mapRedrawRaf = null;
-          if (heatmapMode && timelineState) drawHeatmap(timelineState.runs);
+          if (segmentAnalysisMode && timelineState) drawSegmentAnalysisMap();
+          else if (heatmapMode && timelineState) drawHeatmap(timelineState.runs);
           else if (lastSnapshot) drawRoutes(lastSnapshot);
         });
       });
@@ -1025,7 +1710,8 @@
   function syncMapInteractionMode() {
     mapLocked = false;
     const map = getMapLibreMap();
-    const useMapLibrePointer = (isTrailPanelOpen() || heatmapMode) && Boolean(map);
+    const useMapLibrePointer =
+      (isTrailPanelOpen() || heatmapMode || segmentAnalysisMode) && Boolean(map);
     const container = document.getElementById("deck-container");
     if (container) container.style.pointerEvents = "auto";
 
@@ -1070,15 +1756,27 @@
     ensureMapViewSync();
   }
 
-  function setMapFocusMode(active) {
+  function syncPulseUrl(active) {
+    if (window.location.protocol === "file:") return;
+    const onTrail = window.location.pathname === "/maps/trail";
+    if (active && !onTrail) {
+      window.history.pushState({ pulse: "trail" }, "", "/maps/trail");
+    } else if (!active && onTrail) {
+      window.history.replaceState({}, "", "/maps");
+    }
+  }
+
+  function setMapFocusMode(active, opts) {
+    opts = opts || {};
     const container = document.getElementById("deck-container");
     if (container) container.classList.toggle("trail-pulse-focus", active);
     document.body.classList.toggle("trail-pulse-focus", active);
-    if (typeof window.updatePulseLayers === "function") {
+    if (!opts.skipLayers && typeof window.updatePulseLayers === "function") {
       window.updatePulseLayers(active);
     }
     syncMapInteractionMode();
     ensureMapViewSync();
+    if (!opts.skipUrl) syncPulseUrl(active);
   }
 
   function setMapInteractive(interactive) {
@@ -1581,6 +2279,9 @@
 
   function renderPlayer(payload) {
     const content = document.getElementById("strava-content");
+    segmentAnalysisMode = false;
+    hideSegmentAnalysisCharts();
+    loadedRunsPayload = payload;
     try {
       timelineState = buildTimeline(payload.runs);
     } catch (error) {
@@ -1636,30 +2337,7 @@
       setPlaybackMs(ms, { allowZoom: true, showHeatmap: ms >= timelineState.endMs });
     });
     document.getElementById("change-range-btn").addEventListener("click", function () {
-      stopAnimation();
-      lastZoomedRunIndex = -1;
-      lastSnapshot = null;
-      heatmapMode = false;
-      runDetailMode = false;
-      runExplorerIndex = -1;
-      selectedRunIndices = [];
-      densityEdges = null;
-      hideRunElevationChart();
-      setHeatmapInteractive(false);
-      setMapFocusMode(true);
-      hideRouteCanvas();
-      document.getElementById("viz-charts").hidden = true;
-      const runCharts = document.getElementById("run-explorer-charts");
-      if (runCharts) runCharts.hidden = true;
-      if (distanceChart) {
-        distanceChart.destroy();
-        distanceChart = null;
-      }
-      if (elevGainChart) {
-        elevGainChart.destroy();
-        elevGainChart = null;
-      }
-      content.innerHTML = renderDateRangeForm();
+      resetToDateRangeForm();
     });
   }
 
@@ -1682,6 +2360,12 @@
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 429 || data.rate_limited) {
+          content.innerHTML =
+            renderError(data.message || "Strava rate limit reached. Wait ~15 minutes.") +
+            renderDateRangeForm();
+          return;
+        }
         if (response.status === 403 && data.activity_access === false) {
           content.innerHTML = renderConnectStrava(data.message || "Re-authorize Strava.");
           return;
@@ -1700,7 +2384,7 @@
         return;
       }
 
-      renderPlayer(data);
+      renderModePicker(data);
     } catch (error) {
       content.innerHTML = renderError(String(error)) + renderDateRangeForm();
     }
@@ -1721,16 +2405,20 @@
     });
   }
 
-  async function openTrailPulsePanel() {
+  async function openTrailPulsePanel(opts) {
+    opts = opts || {};
+    if (window.enterTrailAnalysisMode) {
+      window.enterTrailAnalysisMode();
+    }
     const panel = document.getElementById("strava-panel");
     const content = document.getElementById("strava-content");
-    document.getElementById("pulse-panel-title").textContent = "strava trail pulse";
+    document.getElementById("pulse-panel-title").textContent = "strava.analysis()";
     panel.hidden = false;
-    setMapFocusMode(true);
+    setMapFocusMode(true, Object.assign({ skipLayers: true }, opts));
     ensureMapNavigationEnabled();
 
     if (window.location.protocol === "file:") {
-      content.innerHTML = renderError("Open http://localhost:5000 via server.py");
+      content.innerHTML = renderError("Open http://localhost:5000/maps via server.py");
       return;
     }
 
@@ -1742,6 +2430,15 @@
     if (!status.connected) {
       content.innerHTML =
         '<div class="hud-dim"># not authenticated</div><div style="margin-top:10px"><a class="strava-link" href="/auth/strava">→ connect strava</a></div>';
+      return;
+    }
+    if (status.rate_limited) {
+      content.innerHTML =
+        '<div class="hud-dim"># strava rate limit</div>' +
+        "<div>" +
+        (status.message || "Strava is temporarily limiting requests. Wait ~15 minutes.") +
+        "</div>" +
+        renderDateRangeForm();
       return;
     }
     if (!status.activity_access) {
@@ -1769,7 +2466,9 @@
     stop: stopAnimation,
     setFocus: setMapFocusMode,
     redrawRoutes: function () {
-      if (runDetailMode && timelineState && runExplorerIndex >= 0) {
+      if (segmentAnalysisMode && timelineState) {
+        drawSegmentAnalysisMap();
+      } else if (runDetailMode && timelineState && runExplorerIndex >= 0) {
         drawRunExplorer(timelineState.runs[runExplorerIndex]);
       } else if (heatmapMode && timelineState) {
         drawHeatmap(timelineState.runs);

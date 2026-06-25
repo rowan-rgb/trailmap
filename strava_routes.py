@@ -12,6 +12,7 @@ from strava_client import STRAVA_API
 RUN_TYPES = {"Run", "TrailRun"}
 MAX_RUNS = 25
 MAX_POINTS_PER_RUN = 220
+MAX_SEGMENT_DETAIL_FETCH = 40
 
 ROUTE_COLORS = [
     [252, 76, 2],
@@ -37,6 +38,16 @@ def _downsample(values: list[Any], max_points: int) -> list[Any]:
         return values
     step = (len(values) - 1) / (max_points - 1)
     return [values[round(i * step)] for i in range(max_points)]
+
+
+def get_activity_detail(access_token: str, activity_id: int) -> dict[str, Any]:
+    response = requests.get(
+        f"{STRAVA_API}/activities/{activity_id}",
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def get_activity_streams(access_token: str, activity_id: int) -> dict[str, list[Any]]:
@@ -262,6 +273,151 @@ def _build_run_record(activity: dict[str, Any], streams: dict[str, list[Any]], c
     }
 
 
+def _decode_polyline(polyline_str: str) -> list[list[float]]:
+    coordinates: list[list[float]] = []
+    index = 0
+    lat = 0
+    lng = 0
+    length = len(polyline_str)
+
+    while index < length:
+        shift = 0
+        result = 0
+        while True:
+            byte = ord(polyline_str[index]) - 63
+            index += 1
+            result |= (byte & 0x1F) << shift
+            shift += 5
+            if byte < 0x20:
+                break
+        delta_lat = ~(result >> 1) if result & 1 else (result >> 1)
+        lat += delta_lat
+
+        shift = 0
+        result = 0
+        while True:
+            byte = ord(polyline_str[index]) - 63
+            index += 1
+            result |= (byte & 0x1F) << shift
+            shift += 5
+            if byte < 0x20:
+                break
+        delta_lng = ~(result >> 1) if result & 1 else (result >> 1)
+        lng += delta_lng
+        coordinates.append([lat / 1e5, lng / 1e5])
+
+    return coordinates
+
+
+def _extract_elevation_profile(
+    distance_m: list[float],
+    altitude_m: list[float],
+    start_index: int | None,
+    end_index: int | None,
+    *,
+    max_points: int = 80,
+) -> list[dict[str, float]]:
+    if start_index is None or end_index is None:
+        return []
+    start = int(start_index)
+    end = min(int(end_index), len(distance_m) - 1)
+    if end <= start or start < 0:
+        return []
+
+    base_dist = distance_m[start]
+    indices = list(range(start, end + 1))
+    profile: list[dict[str, float]] = []
+    for index in _downsample(indices, max_points):
+        profile.append(
+            {
+                "distance_m": round(distance_m[index] - base_dist, 1),
+                "altitude_m": round(float(altitude_m[index]), 1),
+            }
+        )
+    return profile
+
+
+def _normalize_segment_effort(effort: dict[str, Any]) -> dict[str, Any] | None:
+    segment = effort.get("segment") or {}
+    segment_id = segment.get("id")
+    if not segment_id:
+        return None
+
+    distance_m = float(effort.get("distance") or segment.get("distance") or 0)
+    elapsed_s = int(effort.get("elapsed_time") or 0)
+    pace_min_per_km = None
+    if distance_m > 50 and elapsed_s > 0:
+        pace_min_per_km = round((elapsed_s / 60) / (distance_m / 1000), 2)
+
+    return {
+        "segment_id": int(segment_id),
+        "segment_name": segment.get("name"),
+        "elapsed_s": elapsed_s,
+        "distance_m": round(distance_m, 1),
+        "pace_min_per_km": pace_min_per_km,
+        "start_date": effort.get("start_date") or effort.get("start_date_local"),
+        "pr_rank": effort.get("pr_rank"),
+        "kom_rank": effort.get("kom_rank"),
+    }
+
+
+def explore_segments(access_token: str, bounds: dict[str, float]) -> list[dict[str, Any]]:
+    response = requests.get(
+        f"{STRAVA_API}/segments/explore",
+        headers={"Authorization": f"Bearer {access_token}"},
+        params={
+            "bounds": (
+                f"{bounds['min_lat']},{bounds['min_lng']},"
+                f"{bounds['max_lat']},{bounds['max_lng']}"
+            ),
+            "activity_type": "running",
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    return payload.get("segments") or []
+
+
+def get_segment_detail(access_token: str, segment_id: int) -> dict[str, Any]:
+    response = requests.get(
+        f"{STRAVA_API}/segments/{segment_id}",
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_run_segments(access_token: str, segment_ids: list[int]) -> dict[str, Any]:
+    unique_ids = list(dict.fromkeys(int(item) for item in segment_ids if item))[:MAX_SEGMENT_DETAIL_FETCH]
+    segments: list[dict[str, Any]] = []
+
+    for segment_id in unique_ids:
+        try:
+            detail = get_segment_detail(access_token, segment_id)
+        except requests.HTTPError:
+            continue
+
+        polyline = (detail.get("map") or {}).get("polyline")
+        path: list[list[float]] = []
+        if polyline:
+            path = [[point[1], point[0]] for point in _decode_polyline(polyline)]
+
+        segments.append(
+            {
+                "id": detail.get("id"),
+                "name": detail.get("name"),
+                "distance_km": round((detail.get("distance") or 0) / 1000, 2),
+                "avg_grade": detail.get("average_grade"),
+                "climb_category": detail.get("climb_category"),
+                "path": path,
+            }
+        )
+
+    return {"segments": segments}
+
+
 def _bounds_from_runs(runs: list[dict[str, Any]]) -> dict[str, float] | None:
     lngs: list[float] = []
     lats: list[float] = []
@@ -297,9 +453,33 @@ def fetch_runs_timeline(
 
     for index, activity in enumerate(activities):
         try:
-            streams = get_activity_streams(access_token, int(activity["id"]))
+            activity_id = int(activity["id"])
+            streams = get_activity_streams(access_token, activity_id)
+            detail = get_activity_detail(access_token, activity_id)
+
+            latlng = streams.get("latlng") or []
+            count = len(latlng)
+            distance = list(streams.get("distance") or range(count))
+            altitude = list(streams.get("altitude") or [0] * count)
+            distance = (distance + [distance[-1] if distance else 0])[:count]
+            altitude = (altitude + [altitude[-1] if altitude else 0])[:count]
+
+            segment_efforts = []
+            for item in detail.get("segment_efforts") or []:
+                normalized = _normalize_segment_effort(item)
+                if not normalized:
+                    continue
+                normalized["elevation_profile"] = _extract_elevation_profile(
+                    distance,
+                    altitude,
+                    item.get("start_index"),
+                    item.get("end_index"),
+                )
+                segment_efforts.append(normalized)
+
             run = _build_run_record(activity, streams, ROUTE_COLORS[index % len(ROUTE_COLORS)])
             if run:
+                run["segment_efforts"] = segment_efforts
                 runs.append(run)
             else:
                 skipped.append(activity.get("name") or str(activity.get("id")))

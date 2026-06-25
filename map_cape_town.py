@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 
@@ -17,7 +16,7 @@ CITY_MOBILITY_PULSE = {
 }
 
 TRAIL_PULSE = {
-    "name": "trail pulse",
+    "name": "trail analysis",
     "latitude": -33.9628,
     "longitude": 18.4098,
     "color": [217, 119, 6],
@@ -38,7 +37,7 @@ HUD_HEAD = """
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/trail_pulse.js?v=28"></script>
+<script src="/static/trail_pulse.js?v=36"></script>
 <style>
   :root {
     --term-green: #1a7f37;
@@ -204,10 +203,53 @@ HUD_HEAD = """
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
 
-  .hud-panel--tl { top: 20px; left: 20px; font-size: 0.59rem; padding: 8px 11px; }
+  .hud-panel--tl {
+    top: 20px;
+    left: 20px;
+    font-size: 0.59rem;
+    padding: 8px 11px;
+    pointer-events: auto;
+  }
+
   .hud-panel--br { bottom: 20px; right: 20px; min-width: 280px; }
 
   .hud-panel--tl[hidden] { display: none; }
+
+  body.trail-analysis-mode #hud-help,
+  body.city-mobility-mode #hud-help {
+    display: none !important;
+  }
+
+  .pulse-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pulse-menu__item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    padding: 2px 0;
+    cursor: pointer;
+    color: inherit;
+  }
+
+  .pulse-menu__item:hover .pulse-menu__label {
+    text-decoration: underline;
+  }
+
+  .pulse-menu__label--trail { color: #d97706; }
+  .pulse-menu__label--city { color: #0550ae; }
 
   .hud-prompt { color: var(--term-purple); }
   .hud-dim { color: #57606a; }
@@ -330,6 +372,51 @@ HUD_HEAD = """
 
   #run-explorer-charts[hidden] { display: none; }
 
+  #segment-analysis-charts {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 25;
+    pointer-events: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  #segment-analysis-charts[hidden] { display: none; }
+
+  @media (max-width: 900px) {
+    #segment-analysis-charts { grid-template-columns: 1fr; }
+  }
+
+  .mode-actions { margin-top: 10px; }
+
+  .analysis-list {
+    margin-top: 8px;
+    max-height: 180px;
+    overflow: auto;
+  }
+
+  .segment-chip--clickable {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 1px 4px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  .segment-chip--clickable:hover {
+    background: rgba(130, 80, 223, 0.08);
+  }
+
+  .segment-chip--active {
+    background: rgba(130, 80, 223, 0.14);
+    outline: 1px solid rgba(130, 80, 223, 0.45);
+  }
+
   .chart-card--wide { height: 190px; }
 
   .chart-card--wide canvas { height: 150px !important; }
@@ -375,10 +462,22 @@ HUD_HEAD = """
 
 HUD_BODY = """
 <div class="hud">
-  <div class="hud-panel hud-panel--tl" id="hud-help">
-    <div><span class="hud-dim">click</span> <span class="hud-key">trail pulse</span></div>
-    <div><span class="hud-dim">click</span> <span class="hud-key">city mobility pulse</span></div>
-  </div>
+  <nav class="hud-panel hud-panel--tl" id="hud-help" aria-label="Map modules">
+    <ul class="pulse-menu">
+      <li>
+        <button type="button" class="pulse-menu__item" id="pulse-trail-btn">
+          <span class="hud-dim">→</span>
+          <span class="pulse-menu__label pulse-menu__label--trail">trail analysis</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="pulse-menu__item" id="pulse-city-btn">
+          <span class="hud-dim">→</span>
+          <span class="pulse-menu__label pulse-menu__label--city">city mobility pulse</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
 
   <div class="hud-panel hud-panel--br">
     <div><span class="hud-dim">viewport.</span><span class="hud-key">lat</span> = <span class="hud-val" id="hud-lat">{lat}</span></div>
@@ -418,10 +517,20 @@ HUD_BODY = """
     <canvas id="run-elevation-chart"></canvas>
   </div>
 </div>
+
+<div id="segment-analysis-charts" hidden>
+  <div class="chart-card chart-card--wide">
+    <div class="chart-card__title" id="segment-pace-chart-title">segment pace · time</div>
+    <canvas id="segment-pace-chart"></canvas>
+  </div>
+  <div class="chart-card chart-card--wide">
+    <div class="chart-card__title" id="segment-elevation-chart-title">segment elevation</div>
+    <canvas id="segment-elevation-chart"></canvas>
+  </div>
+</div>
 """
 
 HUD_SCRIPT = """
-    const ALL_PULSES = __PULSES_JSON__;
     const hudLat = document.getElementById("hud-lat");
     const hudLng = document.getElementById("hud-lng");
     const hudZoom = document.getElementById("hud-zoom");
@@ -429,6 +538,8 @@ HUD_SCRIPT = """
     const stravaPanel = document.getElementById("strava-panel");
     const stravaClose = document.getElementById("strava-close");
     const hudHelp = document.getElementById("hud-help");
+    const pulseTrailBtn = document.getElementById("pulse-trail-btn");
+    const pulseCityBtn = document.getElementById("pulse-city-btn");
 
     function hideHudHelp() {
       if (hudHelp) hudHelp.hidden = true;
@@ -446,25 +557,43 @@ HUD_SCRIPT = """
       hudPitch.textContent = Math.round(viewState.pitch || 0);
     }
 
-    function updatePulseLayers(trailFocusActive) {
-      if (!deckInstance || !jsonInput || !jsonInput.layers) return;
-      const pulses = trailFocusActive
-        ? ALL_PULSES.filter(function (pulse) { return pulse.name === "trail pulse"; })
-        : ALL_PULSES;
-      const layers = jsonInput.layers.map(function (layer) {
-        if (layer["@@type"] !== "ScatterplotLayer") return layer;
-        return Object.assign({}, layer, { data: pulses });
-      });
-      deckInstance.setProps({ layers: layers });
+    window.updatePulseLayers = function () {};
+
+    function enterTrailAnalysisMode() {
+      document.body.classList.add("trail-analysis-mode");
+      document.body.classList.remove("city-mobility-mode");
+      hideHudHelp();
     }
 
-    window.updatePulseLayers = updatePulseLayers;
+    function enterCityMobilityMode() {
+      document.body.classList.remove("trail-analysis-mode");
+      document.body.classList.add("city-mobility-mode");
+      hideHudHelp();
+    }
+
+    function exitModuleMode() {
+      document.body.classList.remove("trail-analysis-mode");
+      document.body.classList.remove("city-mobility-mode");
+      showHudHelp();
+    }
+
+    window.enterTrailAnalysisMode = enterTrailAnalysisMode;
+    window.exitTrailAnalysisMode = exitModuleMode;
+
+    function openTrailAnalysis() {
+      enterTrailAnalysisMode();
+      window.history.pushState({ pulse: "trail" }, "", "/maps/trail");
+      TrailPulseViz.open({ skipUrl: true, skipLayers: true });
+    }
 
     function handleCityMobilityPulseClick() {
-      hideHudHelp();
+      enterCityMobilityMode();
       const title = document.getElementById("pulse-panel-title");
       const content = document.getElementById("strava-content");
-      if (window.TrailPulseViz) TrailPulseViz.setFocus(false);
+      if (window.TrailPulseViz) {
+        TrailPulseViz.stop();
+        TrailPulseViz.setFocus(false, { skipUrl: true, skipLayers: true });
+      }
       stravaPanel.hidden = false;
       title.textContent = "city mobility pulse";
       content.innerHTML =
@@ -473,22 +602,45 @@ HUD_SCRIPT = """
         '<div style="margin-top:8px">Mobility data integration coming soon.</div>';
     }
 
+    if (pulseTrailBtn) pulseTrailBtn.addEventListener("click", openTrailAnalysis);
+    if (pulseCityBtn) pulseCityBtn.addEventListener("click", handleCityMobilityPulseClick);
+
     stravaClose.addEventListener("click", function () {
       stravaPanel.hidden = true;
-      showHudHelp();
       if (window.TrailPulseViz) {
         TrailPulseViz.stop();
-        TrailPulseViz.setFocus(false);
+        TrailPulseViz.setFocus(false, { skipLayers: true });
       }
+      exitModuleMode();
+      if (window.location.pathname === "/maps/trail") {
+        window.history.replaceState({}, "", "/maps");
+      }
+    });
+
+    window.addEventListener("popstate", function () {
+      if (window.location.pathname === "/maps/trail") {
+        enterTrailAnalysisMode();
+        TrailPulseViz.open({ skipUrl: true, skipLayers: true });
+        return;
+      }
+      stravaPanel.hidden = true;
+      if (window.TrailPulseViz) {
+        TrailPulseViz.stop();
+        TrailPulseViz.setFocus(false, { skipLayers: true });
+      }
+      exitModuleMode();
     });
 
     TrailPulseViz.init(deckInstance);
 
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("strava") === "connected") {
-      hideHudHelp();
-      TrailPulseViz.open();
-      window.history.replaceState({}, "", window.location.pathname);
+    const stravaStatus = urlParams.get("strava");
+    if (stravaStatus === "connected") {
+      enterTrailAnalysisMode();
+      TrailPulseViz.open({ skipUrl: true, skipLayers: true });
+      window.history.replaceState({}, "", "/maps/trail");
+    } else if (stravaStatus) {
+      window.history.replaceState({}, "", "/maps");
     }
 
     deckInstance.setProps({
@@ -497,46 +649,10 @@ HUD_SCRIPT = """
         TrailPulseViz.redrawRoutes();
         return viewState;
       },
-      onClick: (info) => {
-        if (!info.object) return;
-        if (info.object.name === "trail pulse") {
-          hideHudHelp();
-          TrailPulseViz.open();
-        } else if (info.object.name === "city mobility pulse") {
-          handleCityMobilityPulseClick();
-        }
-      },
     });
 
     updateHud(deckInstance.viewState || jsonInput.initialViewState);
 """
-
-
-def _glow_layers() -> list[pdk.Layer]:
-    glow = pdk.Layer(
-        "ScatterplotLayer",
-        data=PULSES,
-        get_position=["longitude", "latitude"],
-        get_fill_color="glow",
-        get_radius=1800,
-        radius_min_pixels=14,
-        radius_max_pixels=48,
-        pickable=False,
-    )
-    core = pdk.Layer(
-        "ScatterplotLayer",
-        data=PULSES,
-        get_position=["longitude", "latitude"],
-        get_fill_color="color",
-        get_line_color=[255, 255, 255, 255],
-        get_radius=700,
-        radius_min_pixels=6,
-        radius_max_pixels=14,
-        line_width_min_pixels=2,
-        stroked=True,
-        pickable=True,
-    )
-    return [glow, core]
 
 
 def build_map() -> pdk.Deck:
@@ -551,14 +667,10 @@ def build_map() -> pdk.Deck:
     )
 
     return pdk.Deck(
-        layers=_glow_layers(),
+        layers=[],
         map_style=TRAIL_BASEMAP,
         map_provider="carto",
         initial_view_state=view_state,
-        tooltip={
-            "html": "<span style='font-family:monospace'>{name}</span><br/><span style='font-family:monospace;color:#57606a;font-size:11px'>click to open</span>",
-            "style": {"color": "#0550ae", "backgroundColor": "#ffffff"},
-        },
     )
 
 
@@ -577,7 +689,7 @@ def _inject_terminal_ui(html: str) -> str:
     )
     html = re.sub(
         r"(const deckInstance = createDeck\([\s\S]*?\);\s*)",
-        lambda m: m.group(1) + HUD_SCRIPT.replace("__PULSES_JSON__", json.dumps(PULSES)),
+        lambda m: m.group(1) + HUD_SCRIPT,
         html,
         count=1,
     )
