@@ -2,10 +2,26 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from pathlib import Path
 
 import pydeck as pdk
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _trail_app_config_script() -> str:
+    config = {
+        "public_demo": _env_flag("PUBLIC_DEMO"),
+        "trail_map_only": _env_flag("TRAIL_MAP_ONLY"),
+        "auto_open_trail": _env_flag("TRAIL_MAP_ONLY"),
+    }
+    payload = json.dumps(config, separators=(",", ":"))
+    return f"<script>window.__TRAIL_APP_CONFIG={payload};</script>\n"
 
 CITY_MOBILITY_PULSE = {
     "name": "city mobility pulse",
@@ -37,7 +53,8 @@ HUD_HEAD = """
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/trail_pulse.js?v=57"></script>
+{trail_app_config}
+<script src="/static/trail_pulse.js?v=58"></script>
 <style>
   :root {
     --term-green: #1a7f37;
@@ -210,8 +227,6 @@ HUD_HEAD = """
     padding: 8px 11px;
     pointer-events: auto;
   }
-
-  .hud-panel--br { bottom: 20px; right: 20px; min-width: 280px; }
 
   .hud-panel--tl[hidden] { display: none; }
 
@@ -567,7 +582,6 @@ HUD_HEAD = """
 
   @media (max-width: 900px) {
     #viz-charts { grid-template-columns: 1fr; }
-    .hud-panel--br { display: none; }
   }
 </style>
 """
@@ -590,14 +604,6 @@ HUD_BODY = """
       </li>
     </ul>
   </nav>
-
-  <div class="hud-panel hud-panel--br">
-    <div><span class="hud-dim">viewport.</span><span class="hud-key">lat</span> = <span class="hud-val" id="hud-lat">{lat}</span></div>
-    <div><span class="hud-dim">viewport.</span><span class="hud-key">lng</span> = <span class="hud-val" id="hud-lng">{lng}</span></div>
-    <div><span class="hud-dim">viewport.</span><span class="hud-key">zoom</span> = <span class="hud-val" id="hud-zoom">{zoom}</span></div>
-    <div><span class="hud-dim">viewport.</span><span class="hud-key">pitch</span> = <span class="hud-val" id="hud-pitch">{pitch}</span></div>
-    <div class="hud-dim">basemap · OpenTopoMap</div>
-  </div>
 </div>
 
 <div id="route-stage" hidden>
@@ -643,10 +649,6 @@ HUD_BODY = """
 """
 
 HUD_SCRIPT = """
-    const hudLat = document.getElementById("hud-lat");
-    const hudLng = document.getElementById("hud-lng");
-    const hudZoom = document.getElementById("hud-zoom");
-    const hudPitch = document.getElementById("hud-pitch");
     const stravaPanel = document.getElementById("strava-panel");
     const stravaClose = document.getElementById("strava-close");
     const hudHelp = document.getElementById("hud-help");
@@ -662,11 +664,7 @@ HUD_SCRIPT = """
     }
 
     function updateHud(viewState) {
-      if (!viewState) return;
-      hudLat.textContent = viewState.latitude.toFixed(4);
-      hudLng.textContent = viewState.longitude.toFixed(4);
-      hudZoom.textContent = viewState.zoom.toFixed(1);
-      hudPitch.textContent = Math.round(viewState.pitch || 0);
+      /* viewport readout removed */
     }
 
     window.updatePulseLayers = function () {};
@@ -809,7 +807,10 @@ def _inject_terminal_ui(html: str) -> str:
         "\n",
         html,
     )
-    html = html.replace("</head>", f"{HUD_HEAD}</head>")
+    html = html.replace(
+        "</head>",
+        HUD_HEAD.replace("{trail_app_config}", _trail_app_config_script()) + "</head>",
+    )
     html = html.replace(
         "<body>",
         f"<body>{HUD_BODY.format(node_count=len(PULSES), lat=MAP_CENTER_LAT, lng=MAP_CENTER_LNG, zoom=ZOOM, pitch=PITCH)}",

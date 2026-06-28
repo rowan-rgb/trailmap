@@ -25,10 +25,11 @@ Rules:
 - Answer ONLY from the TRAINING DATA JSON. Do not invent runs, dates, or metrics.
 - Say clearly if the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
+- Be concise: write about 30% shorter than you normally would — no filler, no repeating the question, no long intros.
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
-  "answer": "2–5 short paragraphs as plain text",
+  "answer": "1–3 short paragraphs, ~120–180 words total",
   "plots": [
     {
       "title": "Chart title",

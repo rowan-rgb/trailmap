@@ -88,6 +88,8 @@ def public_config():
 
 @app.get("/background")
 def background_view():
+    if _trail_map_only():
+        return redirect("/maps")
     return send_from_directory(ROOT / "static", "background.html")
 
 
@@ -383,6 +385,8 @@ def strava_trail_pulse():
 
 @app.get("/api/trail/coach/status")
 def trail_coach_status():
+    if _public_demo():
+        return jsonify({"configured": False, "disabled": True})
     from trail_coach import is_configured
 
     return jsonify({"configured": is_configured()})
@@ -390,6 +394,9 @@ def trail_coach_status():
 
 @app.post("/api/trail/coach/chat")
 def trail_coach_chat():
+    if _public_demo():
+        return jsonify({"message": "AI coach is disabled on the public demo."}), 403
+
     from trail_coach import ask_coach, is_configured
 
     if not is_configured():
@@ -421,6 +428,9 @@ def trail_coach_chat():
 
 @app.post("/api/trail/utct-opinion")
 def trail_utct_opinion():
+    if _public_demo():
+        return jsonify({"message": "AI coach is disabled on the public demo."}), 403
+
     from trail_coach import is_configured, utct_opinion
 
     if not is_configured():

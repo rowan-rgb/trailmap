@@ -59,6 +59,10 @@
   let segmentChartsHome = null;
   let appConfig = { public_demo: false, trail_map_only: false, auto_open_trail: false };
 
+  if (window.__TRAIL_APP_CONFIG) {
+    appConfig = Object.assign(appConfig, window.__TRAIL_APP_CONFIG);
+  }
+
   const SEGMENT_COLORS = {
     climbing: [130, 80, 223],
     high_speed: [5, 80, 174],
@@ -1615,7 +1619,7 @@
     renderPlayer(payload);
   }
 
-  function enterSegmentAnalysisMode(payload) {
+  async function enterSegmentAnalysisMode(payload) {
     stopAnimation();
     segmentAnalysisMode = true;
     selectedStravaSegmentId = null;
@@ -1640,6 +1644,8 @@
 
     timelineState.summary = payload.summary;
     loadedRunsPayload = payload;
+
+    await fetchAppConfig();
 
     const content = document.getElementById("strava-content");
     content.innerHTML =
@@ -2893,7 +2899,7 @@
       const payload = await (await fetch("/api/config")).json();
       appConfig = Object.assign(appConfig, payload);
     } catch (error) {
-      /* keep defaults */
+      /* keep build-time or default config */
     }
     return appConfig;
   }
@@ -3060,7 +3066,8 @@
     return '<div class="hud-dim"># error</div><div>' + message + "</div>";
   }
 
-  function renderPlayer(payload) {
+  async function renderPlayer(payload) {
+    await fetchAppConfig();
     const content = document.getElementById("strava-content");
     segmentAnalysisMode = false;
     hideSegmentAnalysisCharts();
@@ -3175,6 +3182,7 @@
         return;
       }
 
+      await fetchAppConfig();
       renderModePicker(data);
     } catch (error) {
       content.innerHTML = renderError(String(error)) + renderDateRangeForm();
