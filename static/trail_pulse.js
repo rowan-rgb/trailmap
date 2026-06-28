@@ -383,12 +383,6 @@
         submitCoachQuestion();
         return;
       }
-      if (event.target.closest("#coach-utct-btn")) {
-        submitCoachQuestion(
-          "Will Rowan break top 10 at UTCT 35km (~1,900m climb) in November with a time of about 4h15m? Include a chart if it helps."
-        );
-        return;
-      }
       const card = event.target.closest(".run-card[data-run-index]");
       if (card && timelineState && !segmentAnalysisMode) {
         openRunExplorer(Number(card.dataset.runIndex));
@@ -1502,7 +1496,6 @@
       '<textarea id="coach-question" class="trail-coach__input" rows="3" placeholder="e.g. Is vert building toward UTCT? Plot weekly elevation gain."></textarea>' +
       '<div class="trail-coach__actions">' +
       '<button type="button" class="btn-primary" id="coach-submit-btn">ask AI</button>' +
-      '<button type="button" class="btn-secondary" id="coach-utct-btn" style="margin-top:0">UTCT top-10?</button>' +
       "</div>" +
       '<div class="hud-dim trail-coach__hint">answers use loaded runs only · can include simple charts</div>' +
       '<div id="coach-result" class="utct-coach__answer" hidden></div>' +
@@ -1515,7 +1508,6 @@
 
     const inputEl = document.getElementById("coach-question");
     const submitBtn = document.getElementById("coach-submit-btn");
-    const utctBtn = document.getElementById("coach-utct-btn");
     const resultEl = document.getElementById("coach-result");
     if (!resultEl) return;
 
@@ -1525,7 +1517,6 @@
 
     destroyCoachCharts();
     if (submitBtn) submitBtn.disabled = true;
-    if (utctBtn) utctBtn.disabled = true;
     resultEl.hidden = false;
     resultEl.innerHTML = '<div class="hud-dim">thinking…</div>';
 
@@ -1570,7 +1561,6 @@
         '<div class="hud-dim"># error</div><div>' + escapeHtml(String(error)) + "</div>";
     } finally {
       if (submitBtn) submitBtn.disabled = false;
-      if (utctBtn) utctBtn.disabled = false;
     }
   }
 
