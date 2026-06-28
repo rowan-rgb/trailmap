@@ -1,0 +1,1189 @@
+{
+  "runs": [
+    {
+      "id": 13255229889,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-03T15:51:01Z",
+      "distance_km": 1.22,
+      "elevation_gain_m": 9.0
+    },
+    {
+      "id": 13255230136,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-03T16:09:52Z",
+      "distance_km": 1.25,
+      "elevation_gain_m": 6.0
+    },
+    {
+      "id": 13261969365,
+      "name": "Lunch Run",
+      "type": "Run",
+      "start_date": "2025-01-04T11:56:53Z",
+      "distance_km": 5.75,
+      "elevation_gain_m": 62.0
+    },
+    {
+      "id": 13307949104,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-09T15:15:10Z",
+      "distance_km": 6.31,
+      "elevation_gain_m": 263.0
+    },
+    {
+      "id": 13324797589,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-11T14:39:13Z",
+      "distance_km": 5.77,
+      "elevation_gain_m": 255.0
+    },
+    {
+      "id": 13358770628,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-12T16:27:46Z",
+      "distance_km": 1.75,
+      "elevation_gain_m": 82.0
+    },
+    {
+      "id": 13362101289,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-15T16:55:27Z",
+      "distance_km": 1.01,
+      "elevation_gain_m": 1.0
+    },
+    {
+      "id": 13387828416,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-18T15:20:08Z",
+      "distance_km": 5.44,
+      "elevation_gain_m": 249.0
+    },
+    {
+      "id": 13398236235,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-19T17:01:23Z",
+      "distance_km": 1.01,
+      "elevation_gain_m": 0.0
+    },
+    {
+      "id": 13398235684,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-19T17:09:19Z",
+      "distance_km": 1.01,
+      "elevation_gain_m": 1.0
+    },
+    {
+      "id": 13423692552,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-22T17:06:50Z",
+      "distance_km": 0.99,
+      "elevation_gain_m": 3.0
+    },
+    {
+      "id": 13440382595,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-24T17:03:01Z",
+      "distance_km": 1.01,
+      "elevation_gain_m": 4.0
+    },
+    {
+      "id": 13446659730,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2025-01-25T10:58:59Z",
+      "distance_km": 5.8,
+      "elevation_gain_m": 253.0
+    },
+    {
+      "id": 13484719813,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-01-29T17:56:09Z",
+      "distance_km": 1.1,
+      "elevation_gain_m": 129.0
+    },
+    {
+      "id": 13510146052,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-01T15:35:30Z",
+      "distance_km": 4.89,
+      "elevation_gain_m": 227.0
+    },
+    {
+      "id": 13591331173,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-10T17:34:57Z",
+      "distance_km": 5.63,
+      "elevation_gain_m": 236.0
+    },
+    {
+      "id": 13619404749,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-13T17:43:32Z",
+      "distance_km": 3.07,
+      "elevation_gain_m": 159.0
+    },
+    {
+      "id": 13633878041,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-15T15:54:30Z",
+      "distance_km": 5.4,
+      "elevation_gain_m": 63.0
+    },
+    {
+      "id": 13651661085,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-17T16:29:50Z",
+      "distance_km": 5.68,
+      "elevation_gain_m": 249.0
+    },
+    {
+      "id": 13670677247,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-19T17:46:35Z",
+      "distance_km": 2.84,
+      "elevation_gain_m": 122.0
+    },
+    {
+      "id": 13679002643,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-20T17:16:48Z",
+      "distance_km": 1.94,
+      "elevation_gain_m": 89.0
+    },
+    {
+      "id": 13695392568,
+      "name": "Lunch Run",
+      "type": "Run",
+      "start_date": "2025-02-22T11:33:12Z",
+      "distance_km": 5.79,
+      "elevation_gain_m": 317.0
+    },
+    {
+      "id": 13702904491,
+      "name": "Lunch Run",
+      "type": "Run",
+      "start_date": "2025-02-23T11:46:04Z",
+      "distance_km": 5.8,
+      "elevation_gain_m": 266.0
+    },
+    {
+      "id": 13733107353,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-26T16:46:46Z",
+      "distance_km": 3.24,
+      "elevation_gain_m": 7.0
+    },
+    {
+      "id": 13752478718,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-02-27T17:38:48Z",
+      "distance_km": 1.61,
+      "elevation_gain_m": 79.0
+    },
+    {
+      "id": 13759699005,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-01T15:58:35Z",
+      "distance_km": 6.18,
+      "elevation_gain_m": 278.0
+    },
+    {
+      "id": 13770153385,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-02T17:08:58Z",
+      "distance_km": 4.81,
+      "elevation_gain_m": 222.0
+    },
+    {
+      "id": 13831015693,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-09T11:10:25Z",
+      "distance_km": 9.81,
+      "elevation_gain_m": 462.0
+    },
+    {
+      "id": 13843896398,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-10T17:15:19Z",
+      "distance_km": 6.83,
+      "elevation_gain_m": 304.0
+    },
+    {
+      "id": 13886652728,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-15T10:37:12Z",
+      "distance_km": 6.22,
+      "elevation_gain_m": 323.0
+    },
+    {
+      "id": 13917344683,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-18T16:14:40Z",
+      "distance_km": 6.21,
+      "elevation_gain_m": 289.0
+    },
+    {
+      "id": 13943610016,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-21T12:00:47Z",
+      "distance_km": 2.93,
+      "elevation_gain_m": 191.0
+    },
+    {
+      "id": 13983271649,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-25T16:03:51Z",
+      "distance_km": 6.68,
+      "elevation_gain_m": 369.0
+    },
+    {
+      "id": 14012083898,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-28T17:15:44Z",
+      "distance_km": 6.16,
+      "elevation_gain_m": 264.0
+    },
+    {
+      "id": 14039367319,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-03-31T16:34:19Z",
+      "distance_km": 6.38,
+      "elevation_gain_m": 364.0
+    },
+    {
+      "id": 14057855482,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-04-02T12:39:03Z",
+      "distance_km": 10.18,
+      "elevation_gain_m": 634.0
+    },
+    {
+      "id": 14099245087,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-04-06T16:41:09Z",
+      "distance_km": 6.45,
+      "elevation_gain_m": 357.0
+    },
+    {
+      "id": 14146746616,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-04-11T16:39:40Z",
+      "distance_km": 6.36,
+      "elevation_gain_m": 272.0
+    },
+    {
+      "id": 14185122260,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-04-15T16:40:33Z",
+      "distance_km": 5.42,
+      "elevation_gain_m": 285.0
+    },
+    {
+      "id": 14223953297,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-04-19T16:34:10Z",
+      "distance_km": 4.48,
+      "elevation_gain_m": 212.0
+    },
+    {
+      "id": 14243420655,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-04-21T17:08:29Z",
+      "distance_km": 1.67,
+      "elevation_gain_m": 81.0
+    },
+    {
+      "id": 14273608227,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-04-24T17:29:30Z",
+      "distance_km": 4.48,
+      "elevation_gain_m": 225.0
+    },
+    {
+      "id": 14303070119,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-04-26T14:51:48Z",
+      "distance_km": 2.2,
+      "elevation_gain_m": 16.0
+    },
+    {
+      "id": 14303069627,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-04-26T15:25:42Z",
+      "distance_km": 2.23,
+      "elevation_gain_m": 41.0
+    },
+    {
+      "id": 14303070151,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-04-27T15:50:34Z",
+      "distance_km": 6.64,
+      "elevation_gain_m": 309.0
+    },
+    {
+      "id": 14355655343,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-05-02T17:05:42Z",
+      "distance_km": 6.28,
+      "elevation_gain_m": 365.0
+    },
+    {
+      "id": 14383290610,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-05-05T11:14:39Z",
+      "distance_km": 10.58,
+      "elevation_gain_m": 520.0
+    },
+    {
+      "id": 14479062298,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-05-14T17:05:59Z",
+      "distance_km": 1.11,
+      "elevation_gain_m": 134.0
+    },
+    {
+      "id": 14519119611,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-05-18T14:15:57Z",
+      "distance_km": 5.0,
+      "elevation_gain_m": 238.0
+    },
+    {
+      "id": 14577226876,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-05-24T09:56:36Z",
+      "distance_km": 6.52,
+      "elevation_gain_m": 452.0
+    },
+    {
+      "id": 14867583886,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-06-21T10:16:18Z",
+      "distance_km": 6.27,
+      "elevation_gain_m": 289.0
+    },
+    {
+      "id": 14898102067,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-06-24T09:28:36Z",
+      "distance_km": 4.85,
+      "elevation_gain_m": 233.0
+    },
+    {
+      "id": 14963959866,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-06-30T16:27:42Z",
+      "distance_km": 10.09,
+      "elevation_gain_m": 505.0
+    },
+    {
+      "id": 14994929674,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-03T15:42:57Z",
+      "distance_km": 6.22,
+      "elevation_gain_m": 367.0
+    },
+    {
+      "id": 15087892474,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-06T14:44:45Z",
+      "distance_km": 3.75,
+      "elevation_gain_m": 148.0
+    },
+    {
+      "id": 15087892706,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-12T12:12:54Z",
+      "distance_km": 6.06,
+      "elevation_gain_m": 292.0
+    },
+    {
+      "id": 15118508356,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-12T14:40:12Z",
+      "distance_km": 3.79,
+      "elevation_gain_m": 180.0
+    },
+    {
+      "id": 15118508349,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-15T07:50:06Z",
+      "distance_km": 6.14,
+      "elevation_gain_m": 281.0
+    },
+    {
+      "id": 15237923628,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-26T07:14:40Z",
+      "distance_km": 6.57,
+      "elevation_gain_m": 276.0
+    },
+    {
+      "id": 15282853060,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-07-30T07:53:09Z",
+      "distance_km": 6.63,
+      "elevation_gain_m": 280.0
+    },
+    {
+      "id": 15361129796,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-02T13:59:24Z",
+      "distance_km": 6.55,
+      "elevation_gain_m": 508.0
+    },
+    {
+      "id": 15361130114,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-06T08:08:25Z",
+      "distance_km": 6.66,
+      "elevation_gain_m": 373.0
+    },
+    {
+      "id": 15429740007,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-10T08:04:23Z",
+      "distance_km": 10.05,
+      "elevation_gain_m": 481.0
+    },
+    {
+      "id": 15429740317,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-12T08:32:30Z",
+      "distance_km": 6.22,
+      "elevation_gain_m": 364.0
+    },
+    {
+      "id": 15464651850,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2025-08-15T09:22:29Z",
+      "distance_km": 12.27,
+      "elevation_gain_m": 32.0
+    },
+    {
+      "id": 15491041208,
+      "name": "Afternoon Ride",
+      "type": "Run",
+      "start_date": "2025-08-17T16:31:11Z",
+      "distance_km": 2.48,
+      "elevation_gain_m": 0.0
+    },
+    {
+      "id": 15508858991,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-19T07:58:50Z",
+      "distance_km": 9.79,
+      "elevation_gain_m": 469.0
+    },
+    {
+      "id": 15567697775,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-24T11:27:44Z",
+      "distance_km": 8.17,
+      "elevation_gain_m": 444.0
+    },
+    {
+      "id": 15601370279,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-08-27T08:41:47Z",
+      "distance_km": 6.32,
+      "elevation_gain_m": 387.0
+    },
+    {
+      "id": 15667741075,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2025-09-02T08:42:29Z",
+      "distance_km": 6.51,
+      "elevation_gain_m": 11.0
+    },
+    {
+      "id": 15691547403,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-09-04T08:40:04Z",
+      "distance_km": 9.84,
+      "elevation_gain_m": 492.0
+    },
+    {
+      "id": 15737397530,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-09-08T08:54:36Z",
+      "distance_km": 13.5,
+      "elevation_gain_m": 727.0
+    },
+    {
+      "id": 15786521469,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-09-11T10:50:31Z",
+      "distance_km": 11.44,
+      "elevation_gain_m": 580.0
+    },
+    {
+      "id": 15816940723,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-09-15T09:02:45Z",
+      "distance_km": 15.67,
+      "elevation_gain_m": 773.0
+    },
+    {
+      "id": 15876360506,
+      "name": "Afternoon Ride",
+      "type": "Run",
+      "start_date": "2025-09-20T14:35:10Z",
+      "distance_km": 6.96,
+      "elevation_gain_m": 434.0
+    },
+    {
+      "id": 15942214544,
+      "name": "Afternoon Ride",
+      "type": "Run",
+      "start_date": "2025-09-26T14:57:27Z",
+      "distance_km": 1.14,
+      "elevation_gain_m": 140.2
+    },
+    {
+      "id": 15996340544,
+      "name": "Lunch Ride",
+      "type": "Run",
+      "start_date": "2025-10-01T10:26:51Z",
+      "distance_km": 9.7,
+      "elevation_gain_m": 399.0
+    },
+    {
+      "id": 16062295750,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-10-07T12:36:41Z",
+      "distance_km": 9.96,
+      "elevation_gain_m": 642.0
+    },
+    {
+      "id": 16085518311,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-10-09T15:16:09Z",
+      "distance_km": 4.01,
+      "elevation_gain_m": 193.0
+    },
+    {
+      "id": 16113448093,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-10-12T05:59:43Z",
+      "distance_km": 18.92,
+      "elevation_gain_m": 1338.0
+    },
+    {
+      "id": 16146420890,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-10-15T09:38:50Z",
+      "distance_km": 10.8,
+      "elevation_gain_m": 545.0
+    },
+    {
+      "id": 16170660447,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-10-17T15:55:30Z",
+      "distance_km": 8.82,
+      "elevation_gain_m": 110.0
+    },
+    {
+      "id": 16208965801,
+      "name": "Brutally hot",
+      "type": "Run",
+      "start_date": "2025-10-21T08:41:50Z",
+      "distance_km": 19.36,
+      "elevation_gain_m": 934.0
+    },
+    {
+      "id": 16239022692,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2025-10-24T08:39:18Z",
+      "distance_km": 5.86,
+      "elevation_gain_m": 303.0
+    },
+    {
+      "id": 16290250762,
+      "name": "Not-a-fun Run",
+      "type": "Run",
+      "start_date": "2025-10-29T08:33:13Z",
+      "distance_km": 25.79,
+      "elevation_gain_m": 264.0
+    },
+    {
+      "id": 16320355030,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2025-11-01T12:42:03Z",
+      "distance_km": 9.88,
+      "elevation_gain_m": 500.0
+    },
+    {
+      "id": 16371214013,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-11-06T08:28:31Z",
+      "distance_km": 12.39,
+      "elevation_gain_m": 811.0
+    },
+    {
+      "id": 16411560520,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-11-10T09:23:26Z",
+      "distance_km": 9.88,
+      "elevation_gain_m": 494.0
+    },
+    {
+      "id": 16442868397,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-11-13T08:40:28Z",
+      "distance_km": 6.29,
+      "elevation_gain_m": 286.0
+    },
+    {
+      "id": 16476307388,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2025-11-16T15:51:53Z",
+      "distance_km": 5.75,
+      "elevation_gain_m": 295.0
+    },
+    {
+      "id": 16491569542,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2025-11-18T08:30:15Z",
+      "distance_km": 3.01,
+      "elevation_gain_m": 151.0
+    },
+    {
+      "id": 16521312444,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2025-11-21T08:25:05Z",
+      "distance_km": 1.93,
+      "elevation_gain_m": 62.0
+    },
+    {
+      "id": 16539826093,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2025-11-23T06:00:12Z",
+      "distance_km": 11.25,
+      "elevation_gain_m": 949.0
+    },
+    {
+      "id": 16945531450,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-05T15:10:35Z",
+      "distance_km": 9.25,
+      "elevation_gain_m": 376.0
+    },
+    {
+      "id": 16976821079,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-08T09:34:40Z",
+      "distance_km": 5.77,
+      "elevation_gain_m": 241.0
+    },
+    {
+      "id": 17067860570,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-13T14:34:55Z",
+      "distance_km": 4.63,
+      "elevation_gain_m": 238.0
+    },
+    {
+      "id": 17080909422,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-17T14:27:54Z",
+      "distance_km": 7.13,
+      "elevation_gain_m": 319.0
+    },
+    {
+      "id": 17103407615,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-19T14:39:52Z",
+      "distance_km": 6.3,
+      "elevation_gain_m": 293.0
+    },
+    {
+      "id": 17135781854,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-22T08:14:21Z",
+      "distance_km": 10.82,
+      "elevation_gain_m": 542.0
+    },
+    {
+      "id": 17179603100,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2026-01-24T08:18:50Z",
+      "distance_km": 7.27,
+      "elevation_gain_m": 2.0
+    },
+    {
+      "id": 17180281292,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-26T09:54:11Z",
+      "distance_km": 6.28,
+      "elevation_gain_m": 285.0
+    },
+    {
+      "id": 17202988917,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-28T09:55:09Z",
+      "distance_km": 10.81,
+      "elevation_gain_m": 551.0
+    },
+    {
+      "id": 17224990124,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-30T09:32:08Z",
+      "distance_km": 8.45,
+      "elevation_gain_m": 411.0
+    },
+    {
+      "id": 17241716194,
+      "name": "Evening Trail Run",
+      "type": "Run",
+      "start_date": "2026-01-31T20:55:04Z",
+      "distance_km": 0.03,
+      "elevation_gain_m": 0.0
+    },
+    {
+      "id": 17262329649,
+      "name": "Evening Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-02T18:33:10Z",
+      "distance_km": 3.34,
+      "elevation_gain_m": 168.0
+    },
+    {
+      "id": 17271803826,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-03T13:52:26Z",
+      "distance_km": 11.14,
+      "elevation_gain_m": 563.0
+    },
+    {
+      "id": 17314488780,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-07T10:24:17Z",
+      "distance_km": 12.87,
+      "elevation_gain_m": 641.0
+    },
+    {
+      "id": 17350988302,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-10T15:55:06Z",
+      "distance_km": 1.02,
+      "elevation_gain_m": 145.0
+    },
+    {
+      "id": 17381687033,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-13T08:45:42Z",
+      "distance_km": 14.3,
+      "elevation_gain_m": 820.0
+    },
+    {
+      "id": 17428775896,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-17T16:48:47Z",
+      "distance_km": 6.54,
+      "elevation_gain_m": 382.0
+    },
+    {
+      "id": 17459514976,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-20T10:06:03Z",
+      "distance_km": 16.96,
+      "elevation_gain_m": 889.0
+    },
+    {
+      "id": 17494019024,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-23T14:33:28Z",
+      "distance_km": 5.63,
+      "elevation_gain_m": 291.0
+    },
+    {
+      "id": 17505184772,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2026-02-24T13:48:18Z",
+      "distance_km": 2.55,
+      "elevation_gain_m": 107.0
+    },
+    {
+      "id": 17548453401,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-02-28T06:49:37Z",
+      "distance_km": 10.6,
+      "elevation_gain_m": 734.0
+    },
+    {
+      "id": 17585349143,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-03T08:57:07Z",
+      "distance_km": 5.65,
+      "elevation_gain_m": 2.0
+    },
+    {
+      "id": 17622200420,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-06T08:57:19Z",
+      "distance_km": 18.08,
+      "elevation_gain_m": 973.0
+    },
+    {
+      "id": 17656665345,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-09T08:29:04Z",
+      "distance_km": 8.28,
+      "elevation_gain_m": 406.0
+    },
+    {
+      "id": 17705514428,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-13T09:24:08Z",
+      "distance_km": 9.75,
+      "elevation_gain_m": 511.0
+    },
+    {
+      "id": 17715185537,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-14T09:05:29Z",
+      "distance_km": 2.98,
+      "elevation_gain_m": 77.0
+    },
+    {
+      "id": 17727214435,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-15T07:42:38Z",
+      "distance_km": 14.38,
+      "elevation_gain_m": 1168.0
+    },
+    {
+      "id": 17751008142,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2026-03-17T09:42:08Z",
+      "distance_km": 10.0,
+      "elevation_gain_m": 33.0
+    },
+    {
+      "id": 17775891592,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-19T08:28:47Z",
+      "distance_km": 11.66,
+      "elevation_gain_m": 724.0
+    },
+    {
+      "id": 17875003310,
+      "name": "Morning Trail Run with a Puff Adder",
+      "type": "Run",
+      "start_date": "2026-03-27T08:47:27Z",
+      "distance_km": 20.75,
+      "elevation_gain_m": 1176.0
+    },
+    {
+      "id": 17909557450,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-03-30T08:58:42Z",
+      "distance_km": 12.45,
+      "elevation_gain_m": 705.0
+    },
+    {
+      "id": 17934419116,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2026-04-01T09:05:08Z",
+      "distance_km": 7.11,
+      "elevation_gain_m": 70.0
+    },
+    {
+      "id": 17972349211,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2026-04-04T11:10:17Z",
+      "distance_km": 8.33,
+      "elevation_gain_m": 508.0
+    },
+    {
+      "id": 18012834046,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2026-04-07T14:54:24Z",
+      "distance_km": 3.04,
+      "elevation_gain_m": 150.0
+    },
+    {
+      "id": 18050798887,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-04-10T07:05:02Z",
+      "distance_km": 24.06,
+      "elevation_gain_m": 1023.0
+    },
+    {
+      "id": 18100796613,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2026-04-14T08:29:50Z",
+      "distance_km": 7.03,
+      "elevation_gain_m": 373.0
+    },
+    {
+      "id": 18128545757,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-04-16T08:47:05Z",
+      "distance_km": 9.97,
+      "elevation_gain_m": 702.0
+    },
+    {
+      "id": 18156570142,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2026-04-18T11:24:25Z",
+      "distance_km": 14.05,
+      "elevation_gain_m": 861.0
+    },
+    {
+      "id": 18221849005,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-04-23T06:27:55Z",
+      "distance_km": 18.02,
+      "elevation_gain_m": 975.0
+    },
+    {
+      "id": 18278149861,
+      "name": "Afternoon Run",
+      "type": "Run",
+      "start_date": "2026-04-27T14:26:54Z",
+      "distance_km": 4.99,
+      "elevation_gain_m": 278.0
+    },
+    {
+      "id": 18289654614,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-04-28T09:26:08Z",
+      "distance_km": 18.77,
+      "elevation_gain_m": 930.0
+    },
+    {
+      "id": 18328875488,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-05-01T07:11:35Z",
+      "distance_km": 23.58,
+      "elevation_gain_m": 1415.0
+    },
+    {
+      "id": 18371344886,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-05-04T13:30:09Z",
+      "distance_km": 7.43,
+      "elevation_gain_m": 409.0
+    },
+    {
+      "id": 18422295250,
+      "name": "Morning Run",
+      "type": "Run",
+      "start_date": "2026-05-08T09:47:52Z",
+      "distance_km": 7.45,
+      "elevation_gain_m": 465.0
+    },
+    {
+      "id": 18506083230,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-05-14T13:15:15Z",
+      "distance_km": 7.28,
+      "elevation_gain_m": 478.0
+    },
+    {
+      "id": 18544799173,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-05-17T08:29:36Z",
+      "distance_km": 21.5,
+      "elevation_gain_m": 1129.0
+    },
+    {
+      "id": 18605331440,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-05-22T09:29:54Z",
+      "distance_km": 7.49,
+      "elevation_gain_m": 465.0
+    },
+    {
+      "id": 18714812664,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-05-30T08:00:03Z",
+      "distance_km": 42.99,
+      "elevation_gain_m": 2143.0
+    },
+    {
+      "id": 18863395090,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-07T12:06:05Z",
+      "distance_km": 4.27,
+      "elevation_gain_m": 236.0
+    },
+    {
+      "id": 18864132587,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-10T13:33:30Z",
+      "distance_km": 6.97,
+      "elevation_gain_m": 444.0
+    },
+    {
+      "id": 18901832952,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-13T11:19:30Z",
+      "distance_km": 6.95,
+      "elevation_gain_m": 447.0
+    },
+    {
+      "id": 18926659038,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-15T10:43:46Z",
+      "distance_km": 7.58,
+      "elevation_gain_m": 464.0
+    },
+    {
+      "id": 18984749456,
+      "name": "Afternoon Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-19T14:57:01Z",
+      "distance_km": 9.84,
+      "elevation_gain_m": 477.0
+    },
+    {
+      "id": 19032613434,
+      "name": "Morning Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-23T09:18:52Z",
+      "distance_km": 11.95,
+      "elevation_gain_m": 693.0
+    },
+    {
+      "id": 19072616381,
+      "name": "Lunch Trail Run",
+      "type": "Run",
+      "start_date": "2026-06-26T11:20:30Z",
+      "distance_km": 13.87,
+      "elevation_gain_m": 857.0
+    }
+  ],
+  "last_sync_at": "2026-06-28T10:11:03.125610+00:00"
+}
