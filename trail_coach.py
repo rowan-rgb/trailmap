@@ -13,9 +13,42 @@ from dotenv import load_dotenv
 
 ROOT = __import__("pathlib").Path(__file__).resolve().parent
 
+UPCOMING_RACES = [
+    {
+        "name": "Bastille Day",
+        "distance_km": 35,
+        "elevation_m": 1350,
+        "date": "2026-07-11",
+        "priority": "B",
+    },
+    {
+        "name": "Twin Peaks",
+        "distance_km": 30,
+        "elevation_m": 1600,
+        "date": "2026-10-03",
+        "priority": "B",
+    },
+    {
+        "name": "Cape Cobra",
+        "distance_km": 42,
+        "elevation_m": 2200,
+        "date": "2026-10-24",
+        "priority": "B",
+    },
+    {
+        "name": "UTCT",
+        "distance_km": 35,
+        "elevation_m": 1800,
+        "date": "2026-11-22",
+        "priority": "A-race",
+        "notes": "~4h15m top-10 target",
+    },
+]
+
 UTCT_QUESTION = (
-    "Will Rowan break top 10 at UTCT 35km (~1,900m climb) in November "
-    "with a time of about 4h15m?"
+    "Predict my finish time for UTCT 35 km (1,800 m climb, 22 November 2026) — my A-race. "
+    "Based on loaded training, give a realistic time range and what would need to shift "
+    "to hit ~4h15 top-10 pace. Include a chart if helpful."
 )
 
 SYSTEM_PROMPT = """You are a direct, slightly witty trail-running coach reviewing Rowan Davies's Strava training.
@@ -26,6 +59,9 @@ Rules:
 - Say clearly if the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
 - Be concise: write about 30% shorter than you normally would — no filler, no repeating the question, no long intros.
+- Rowan has upcoming target races in context.upcoming_races. When predicting race times, compare similar
+  distance/vert runs in the data, note fitness trends, and give a realistic finish-time range with clear
+  uncertainty. UTCT is the A-race.
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
@@ -227,7 +263,8 @@ def build_training_summary(
         "runs": compact,
         "context": {
             "athlete": "Rowan Davies",
-            "focus_race": "UTCT 35km (~1,900m climb, November, ~4h15m top-10 target)",
+            "upcoming_races": UPCOMING_RACES,
+            "focus_race": "UTCT 35 km (1,800 m climb, 22 November 2026, A-race, ~4h15m top-10 target)",
         },
     }
 

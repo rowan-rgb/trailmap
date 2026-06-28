@@ -59,6 +59,33 @@
   let segmentChartsHome = null;
   let appConfig = { public_demo: false, trail_map_only: false, auto_open_trail: false };
 
+  const COACH_RACE_PRESETS = [
+    {
+      id: "bastille-day",
+      label: "Bastille Day",
+      question:
+        "Predict my finish time for Bastille Day (35 km, 1,350 m climb, 11 July 2026) based on my loaded training. Give a realistic range, note gaps in the data, and include a chart if it helps.",
+    },
+    {
+      id: "twin-peaks",
+      label: "Twin Peaks",
+      question:
+        "Predict my finish time for Twin Peaks (30 km, 1,600 m climb, 3 October 2026) based on my loaded training. Give a realistic range, note gaps in the data, and include a chart if it helps.",
+    },
+    {
+      id: "cape-cobra",
+      label: "Cape Cobra",
+      question:
+        "Predict my finish time for Cape Cobra (42 km, 2,200 m climb, 24 October 2026) based on my loaded training. Give a realistic range, note gaps in the data, and include a chart if it helps.",
+    },
+    {
+      id: "utct",
+      label: "UTCT (A-race)",
+      question:
+        "Predict my finish time for UTCT 35 km (1,800 m climb, 22 November 2026) — my A-race. Based on loaded training, give a realistic time range and what would need to shift to hit ~4h15 top-10 pace. Include a chart if helpful.",
+    },
+  ];
+
   if (window.__TRAIL_APP_CONFIG) {
     appConfig = Object.assign(appConfig, window.__TRAIL_APP_CONFIG);
   }
@@ -381,6 +408,11 @@
       }
       if (event.target.closest("#coach-submit-btn")) {
         submitCoachQuestion();
+        return;
+      }
+      const raceBtn = event.target.closest(".coach-race-btn[data-race-question]");
+      if (raceBtn) {
+        submitCoachQuestion(raceBtn.getAttribute("data-race-question"));
         return;
       }
       const card = event.target.closest(".run-card[data-run-index]");
@@ -1488,6 +1520,33 @@
     });
   }
 
+  function renderCoachRaceButtons() {
+    return (
+      '<div class="hud-dim trail-coach__race-label">predict upcoming races</div>' +
+      '<div class="trail-coach__race-btns">' +
+      COACH_RACE_PRESETS.map(function (race) {
+        return (
+          '<button type="button" class="btn-secondary coach-race-btn" data-race-id="' +
+          escapeHtml(race.id) +
+          '" data-race-question="' +
+          escapeHtml(race.question) +
+          '">' +
+          escapeHtml(race.label) +
+          "</button>"
+        );
+      }).join("") +
+      "</div>"
+    );
+  }
+
+  function setCoachButtonsDisabled(disabled) {
+    const submitBtn = document.getElementById("coach-submit-btn");
+    if (submitBtn) submitBtn.disabled = disabled;
+    document.querySelectorAll(".coach-race-btn").forEach(function (btn) {
+      btn.disabled = disabled;
+    });
+  }
+
   function renderCoachBlock() {
     if (appConfig.public_demo) return "";
     return (
@@ -1497,6 +1556,7 @@
       '<div class="trail-coach__actions">' +
       '<button type="button" class="btn-primary" id="coach-submit-btn">ask AI</button>' +
       "</div>" +
+      renderCoachRaceButtons() +
       '<div class="hud-dim trail-coach__hint">answers use loaded runs only · can include simple charts</div>' +
       '<div id="coach-result" class="utct-coach__answer" hidden></div>' +
       "</div>"
@@ -1507,7 +1567,6 @@
     if (!loadedRunsPayload || !loadedRunsPayload.runs.length) return;
 
     const inputEl = document.getElementById("coach-question");
-    const submitBtn = document.getElementById("coach-submit-btn");
     const resultEl = document.getElementById("coach-result");
     if (!resultEl) return;
 
@@ -1516,7 +1575,7 @@
     if (inputEl && forcedQuestion) inputEl.value = forcedQuestion;
 
     destroyCoachCharts();
-    if (submitBtn) submitBtn.disabled = true;
+    setCoachButtonsDisabled(true);
     resultEl.hidden = false;
     resultEl.innerHTML = '<div class="hud-dim">thinking…</div>';
 
@@ -1560,7 +1619,7 @@
       resultEl.innerHTML =
         '<div class="hud-dim"># error</div><div>' + escapeHtml(String(error)) + "</div>";
     } finally {
-      if (submitBtn) submitBtn.disabled = false;
+      setCoachButtonsDisabled(false);
     }
   }
 

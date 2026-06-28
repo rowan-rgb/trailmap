@@ -54,7 +54,7 @@ HUD_HEAD = """
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 {trail_app_config}
-<script src="/static/trail_pulse.js?v=60"></script>
+<script src="/static/trail_pulse.js?v=61"></script>
 <style>
   :root {
     --term-green: #1a7f37;
@@ -376,6 +376,25 @@ HUD_HEAD = """
 
   .trail-coach__hint {
     margin-top: 6px;
+  }
+
+  .trail-coach__race-label {
+    margin-top: 8px;
+  }
+
+  .trail-coach__race-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .trail-coach__race-btns .btn-secondary {
+    margin-top: 0;
+    flex: 1 1 calc(50% - 4px);
+    font-size: 0.52rem;
+    padding: 4px 6px;
+    line-height: 1.35;
   }
 
   .coach-plots {
