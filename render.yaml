@@ -1,0 +1,20 @@
+# Render blueprint — public trail map demo (cache bundled in repo).
+# Docs: RENDER.md
+
+services:
+  - type: web
+    name: rowan-trail-map
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python map_cape_town.py
+    startCommand: gunicorn --timeout 120 -w 2 -b 0.0.0.0:$PORT server:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: PUBLIC_DEMO
+        value: "1"
+      - key: TRAIL_MAP_ONLY
+        value: "1"

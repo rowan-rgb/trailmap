@@ -37,7 +37,7 @@ HUD_HEAD = """
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/trail_pulse.js?v=36"></script>
+<script src="/static/trail_pulse.js?v=57"></script>
 <style>
   :root {
     --term-green: #1a7f37;
@@ -306,8 +306,98 @@ HUD_HEAD = """
 
   .btn-secondary { margin-top: 8px; }
 
+  .utct-coach {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--term-border);
+  }
+
+  .utct-coach__question {
+    margin: 6px 0 8px;
+    color: #24292f;
+    line-height: 1.5;
+  }
+
+  .utct-coach__btn {
+    white-space: normal;
+    line-height: 1.45;
+    text-align: left;
+    padding: 6px 8px;
+  }
+
+  .utct-coach__answer {
+    margin-top: 10px;
+    padding: 8px;
+    border: 1px solid var(--term-border);
+    background: #f6f8fa;
+  }
+
+  .utct-coach__text {
+    margin-top: 6px;
+    color: #24292f;
+    line-height: 1.55;
+  }
+
+  .trail-coach__input {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 7px;
+    border: 1px solid var(--term-border);
+    font-family: inherit;
+    font-size: 0.58rem;
+    line-height: 1.45;
+    resize: vertical;
+    min-height: 52px;
+    box-sizing: border-box;
+  }
+
+  .trail-coach__actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .trail-coach__hint {
+    margin-top: 6px;
+  }
+
+  .coach-plots {
+    margin-top: 10px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .coach-plot {
+    padding: 6px 0 0;
+    border-top: 1px solid var(--term-border);
+  }
+
+  .coach-plot canvas {
+    width: 100% !important;
+    max-height: 160px;
+  }
+
   .strava-link { color: #0550ae; text-decoration: none; }
   .strava-link:hover { text-decoration: underline; }
+
+  .trail-intro {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--term-border);
+  }
+
+  .trail-intro__text {
+    margin: 6px 0 0;
+    color: #24292f;
+    line-height: 1.55;
+  }
+
+  .trail-intro__cta {
+    margin-top: 8px;
+    color: #57606a;
+  }
 
   .range-row {
     display: flex;
@@ -385,6 +475,28 @@ HUD_HEAD = """
   }
 
   #segment-analysis-charts[hidden] { display: none; }
+
+  #segment-analysis-charts.segment-analysis-charts--in-panel {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+    grid-template-columns: 1fr;
+    margin-top: 10px;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  #segment-analysis-charts.segment-analysis-charts--in-panel .chart-card--wide {
+    height: 170px;
+  }
+
+  body.trail-pulse-focus #segment-analysis-charts:not(.segment-analysis-charts--in-panel) {
+    z-index: 40;
+    left: 20px;
+    right: min(340px, calc(100vw - 40px));
+  }
 
   @media (max-width: 900px) {
     #segment-analysis-charts { grid-template-columns: 1fr; }
@@ -632,6 +744,21 @@ HUD_SCRIPT = """
     });
 
     TrailPulseViz.init(deckInstance);
+
+    fetch("/api/config")
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (cfg) {
+        if (cfg.trail_map_only && pulseCityBtn) {
+          const row = pulseCityBtn.closest("li");
+          if (row) row.hidden = true;
+        }
+        if (cfg.auto_open_trail && window.location.pathname === "/maps") {
+          openTrailAnalysis();
+        }
+      })
+      .catch(function () {});
 
     const urlParams = new URLSearchParams(window.location.search);
     const stravaStatus = urlParams.get("strava");

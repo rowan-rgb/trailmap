@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -17,6 +19,73 @@ STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token"
 STRAVA_API = "https://www.strava.com/api/v3"
 TOKEN_PATH = Path(__file__).resolve().parent / ".data" / "strava_tokens.json"
 DEFAULT_SCOPES = "activity:read_all,read"
+DEFAULT_RATE_LIMIT_WAIT_S = 900
+
+
+def _header(response: requests.Response, name: str) -> str:
+    return response.headers.get(name) or response.headers.get(name.lower()) or ""
+
+
+def rate_limit_summary(response: requests.Response) -> str:
+    usage = _header(response, "X-RateLimit-Usage")
+    limit = _header(response, "X-RateLimit-Limit")
+    if usage and limit:
+        return f"usage {usage} / limit {limit}"
+    return ""
+
+
+def rate_limit_wait_seconds(response: requests.Response, *, default: int = DEFAULT_RATE_LIMIT_WAIT_S) -> int:
+    retry_after = _header(response, "Retry-After")
+    if retry_after:
+        try:
+            return max(30, int(float(retry_after)))
+        except ValueError:
+            pass
+
+    reset_raw = _header(response, "X-RateLimit-Reset")
+    if reset_raw:
+        try:
+            reset_at = int(float(reset_raw))
+            wait = reset_at - int(time.time()) + 5
+            if 30 <= wait <= 7200:
+                return wait
+        except ValueError:
+            pass
+
+    return default
+
+
+def strava_get(
+    access_token: str,
+    path: str,
+    *,
+    params: dict[str, Any] | None = None,
+    rate_limit_wait_s: int = DEFAULT_RATE_LIMIT_WAIT_S,
+    on_rate_limit: Callable[[int, requests.Response], None] | None = None,
+    timeout: int = 30,
+) -> requests.Response:
+    """GET from Strava API, waiting and retrying on HTTP 429."""
+    url = path if path.startswith("http") else f"{STRAVA_API}/{path.lstrip('/')}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    while True:
+        response = requests.get(url, headers=headers, params=params, timeout=timeout)
+        if response.status_code != 429:
+            response.raise_for_status()
+            return response
+
+        wait_s = rate_limit_wait_seconds(response, default=rate_limit_wait_s)
+        if on_rate_limit:
+            on_rate_limit(wait_s, response)
+        else:
+            summary = rate_limit_summary(response)
+            wait_min = max(1, round(wait_s / 60))
+            suffix = f" · {summary}" if summary else ""
+            print(
+                f"Strava rate limit — waiting {wait_min} min ({wait_s}s){suffix}",
+                file=sys.stderr,
+            )
+        time.sleep(wait_s)
 
 
 def has_client_credentials() -> bool:
@@ -150,13 +219,11 @@ def get_athlete(access_token: str) -> dict[str, Any]:
 
 
 def get_activities(access_token: str, *, page: int = 1, per_page: int = 50) -> list[dict[str, Any]]:
-    response = requests.get(
-        f"{STRAVA_API}/athlete/activities",
-        headers={"Authorization": f"Bearer {access_token}"},
+    response = strava_get(
+        access_token,
+        "athlete/activities",
         params={"page": page, "per_page": per_page},
-        timeout=30,
     )
-    response.raise_for_status()
     return response.json()
 
 
