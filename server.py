@@ -164,7 +164,10 @@ def strava_status():
 
 @app.get("/static/<path:filename>")
 def static_files(filename: str):
-    return send_from_directory(ROOT / "static", filename)
+    response = send_from_directory(ROOT / "static", filename)
+    if filename.endswith((".js", ".css")):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
 
 
 @app.get("/api/strava/runs/timeline")
