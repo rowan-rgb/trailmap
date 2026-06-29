@@ -2926,17 +2926,18 @@
       '<div class="trail-intro">' +
       '<div class="hud-dim"># rowan · trail analysis</div>' +
       '<p class="trail-intro__text">' +
-      "Rowan is one of South Africa's most anonymous trail runners. With very few actual races " +
-      "completed, he is among the vast majority of South African trail runners. However, he has goals! " +
-      "One such goal is to finish top 10 in the UTCT 35 km in November. His training reflects his " +
-      "ongoing commitment to that goal." +
+      "Rowan is one of South Africa's most anonymous trail runners. However, he has goals — big goals " +
+      "and big dreams. He has several upcoming races, including the hotly contested UTCT 35 km, where he " +
+      "hopes to place in the top 10. Another goal is to become a trail running influencer — follow him on Insta " +
+      '<a class="strava-link" href="https://instagram.com/razzie.d" target="_blank" rel="noopener noreferrer">@razzie.d</a>.' +
       "</p>" +
       '<p class="trail-intro__text">' +
-      "Another goal is to become a trail running influencer — follow him on Insta " +
-      '<a class="strava-link" href="https://instagram.com/razzie.d" target="_blank" rel="noopener noreferrer">@razzie.d</a>. ' +
-      "Things aren't going so well for him on that front. But he's not worried. He just keeps running." +
+      "This web-based tool reflects his commitment to trail running and data-driven design. Please explore " +
+      "Rowan's trail running history through data visualisation and segment analysis, as well as an AI coach " +
+      "and prediction agent to help Rowan achieve his ambitions of placing at UTCT, receiving sponsorship, " +
+      "and becoming South Africa's most well-regarded trail running authority." +
       "</p>" +
-      '<p class="trail-intro__cta">Let&rsquo;s see how his runs are going — select a date range below.</p>' +
+      '<p class="trail-intro__cta">Select a date range below to get started.</p>' +
       "</div>"
     );
   }

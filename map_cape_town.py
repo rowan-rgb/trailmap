@@ -54,7 +54,7 @@ HUD_HEAD = """
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 {trail_app_config}
-<script src="/static/trail_pulse.js?v=61"></script>
+<script src="/static/trail_pulse.js?v=62"></script>
 <style>
   :root {
     --term-green: #1a7f37;
