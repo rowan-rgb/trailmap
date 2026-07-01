@@ -58,14 +58,15 @@ Rules:
 - Answer ONLY from the TRAINING DATA JSON. Do not invent runs, dates, or metrics.
 - Say clearly if the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
-- Be concise: write about 30% shorter than you normally would — no filler, no repeating the question, no long intros.
+- Be very concise: about 30% shorter than a typical coach reply — target 80–120 words total.
+  No filler, no repeating the question, no long intros. Lead with the conclusion or key number.
 - Rowan has upcoming target races in context.upcoming_races. When predicting race times, compare similar
   distance/vert runs in the data, note fitness trends, and give a realistic finish-time range with clear
   uncertainty. UTCT is the A-race.
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
-  "answer": "1–3 short paragraphs, ~120–180 words total",
+  "answer": "1–2 short paragraphs, 80–120 words total",
   "plots": [
     {
       "title": "Chart title",
@@ -374,6 +375,7 @@ def ask_coach(
     response = client.chat.completions.create(
         model=model,
         temperature=_chat_temperature(),
+        max_tokens=450,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
