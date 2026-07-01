@@ -1,0 +1,115 @@
+{
+  "title": "UTCT 35 KM BUILD-UP (2026)",
+  "source_file": "UTCT training.png",
+  "peak_period": {
+    "start": "2026-09-12",
+    "end": "2026-10-24",
+    "note": "Peak training period — most important block before UTCT"
+  },
+  "a_race": {
+    "name": "UTCT 35 KM",
+    "date": "2026-11-22",
+    "distance_km": 35,
+    "elevation_m": 1600,
+    "target_time": "4h15",
+    "target_time_range": "4h15–4h45",
+    "effort_pct": "100%",
+    "goal": "Top 10",
+    "notes": ["Peak early, peak hard, peak long", "NeverStopPeaking"]
+  },
+  "benchmark_races": [
+    {
+      "name": "Whale of Trail",
+      "date": "2026-08-15",
+      "distance_km": 35,
+      "elevation_m": 1200,
+      "target_time": "sub 5h00",
+      "effort_pct": "85–90%",
+      "plan_contribution_pct": 5
+    },
+    {
+      "name": "Gun Run Trail",
+      "date": "2026-09-12",
+      "distance_km": 28,
+      "distance_km_range": "25–28",
+      "elevation_m": 1600,
+      "target_time": "4h00",
+      "effort_pct": "85–90%",
+      "notes": [
+        "Strong descent ~15%",
+        "Start T.berg road P.kkp — UTCT route up T.Mount back to T.berg road"
+      ],
+      "training_block": {
+        "weeks": "1–2",
+        "sessions": [
+          "10× hill sprints (5 km, 700 m)",
+          "Hill burst circuit (10 km, 1,000 m)",
+          "21 km mountain run (1,500 m)"
+        ],
+        "block_totals": { "distance_km": 93, "elevation_m": 4650 }
+      }
+    },
+    {
+      "name": "Twin Peaks",
+      "date": "2026-10-03",
+      "distance_km": 30,
+      "elevation_m": 1650,
+      "target_time_range": "3h50–4h15",
+      "effort_pct": "90–95%",
+      "plan_contribution_pct": 15,
+      "training_block": {
+        "weeks": "1–2",
+        "sessions": [
+          "10× hill sprints",
+          "Hill burst circuit",
+          "10 km threshold",
+          "Apollo + 5 km threshold"
+        ],
+        "block_totals": { "distance_km": 163, "elevation_m": 8200 }
+      }
+    },
+    {
+      "name": "Cobra",
+      "date": "2026-10-24",
+      "distance_km": 44,
+      "elevation_m": 2000,
+      "target_time_range": "5h35–5h55",
+      "effort_pct": "90–95%",
+      "plan_contribution_pct": 30,
+      "training_block": {
+        "weeks": "1–4",
+        "sessions": [
+          "F45 recovery class",
+          "6× hill sprints (plan notes 6×, typed 10×)",
+          "10 km threshold",
+          "Hill burst circuit",
+          "Apollo + 5 km threshold"
+        ],
+        "block_totals": { "distance_km": 247, "elevation_m": 12600 }
+      }
+    }
+  ],
+  "plan_totals_to_utct": {
+    "distance_km": 282,
+    "elevation_m": 14400,
+    "period": "12 Sep – 22 Nov"
+  },
+  "session_counts_planned": {
+    "f45_classes": 4,
+    "threshold_5km": 3,
+    "threshold_10km": 2,
+    "hill_sprints": 4,
+    "kloof_corner_circuits": 3
+  },
+  "benchmarks": {
+    "training_runs": [
+      { "distance_km": 21, "elevation_m": 1500 },
+      { "distance_km": 27, "elevation_m": 1600 }
+    ],
+    "race_efforts": [
+      { "distance_km": 30, "elevation_m": 1600 },
+      { "distance_km": 44, "elevation_m": 2000 }
+    ]
+  },
+  "threshold_misc": ["5× 1 km reps", "5 km / 10 km continuous threshold"]
+}

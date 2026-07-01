@@ -12,6 +12,7 @@ from typing import Any
 from dotenv import load_dotenv
 
 ROOT = __import__("pathlib").Path(__file__).resolve().parent
+UTCT_TRAINING_PLAN_PATH = ROOT / "utct_training_plan.json"
 
 UPCOMING_RACES = [
     {
@@ -38,27 +39,30 @@ UPCOMING_RACES = [
     {
         "name": "UTCT",
         "distance_km": 35,
-        "elevation_m": 1800,
+        "elevation_m": 1600,
         "date": "2026-11-22",
         "priority": "A-race",
-        "notes": "~4h15m top-10 target",
+        "notes": "~4h15 top-10 target",
     },
 ]
 
-UTCT_QUESTION = "UTCT 35 km / 1,800 m — 22 Nov 2026 (A-race). Predicted finish time range for top-10 (~4h15)?"
+UTCT_QUESTION = "UTCT 35 km / 1,600 m — 22 Nov 2026 (A-race). Predicted finish time range for top-10 (~4h15)?"
 
 SYSTEM_PROMPT = """You are a direct, slightly witty trail-running coach reviewing Rowan Davies's Strava training.
 The user asks questions about the runs they loaded for a chosen date range.
 
 Rules:
-- Answer ONLY from the TRAINING DATA JSON. Do not invent runs, dates, or metrics.
-- Say clearly if the data cannot answer the question.
+- Answer from the TRAINING DATA JSON (actual Strava runs) and the UTCT TRAINING PLAN JSON (Rowan's
+  written build-up plan). Do not invent runs, dates, or metrics.
+- Compare actual loaded runs against the plan where relevant: volume, vert, key sessions, and readiness
+  for benchmark races and UTCT. Say clearly when the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
 - Be concise but complete: one or two short paragraphs, 100–150 words total.
   No filler or repeating the question. Lead with the key number or verdict.
-- Rowan has upcoming target races in context.upcoming_races. When predicting race times, compare similar
-  distance/vert runs in the data, note fitness trends, and give a realistic finish-time range with clear
-  uncertainty. UTCT is the A-race.
+- Rowan has upcoming target races in context.upcoming_races and a detailed UTCT build-up plan in
+  context.utct_training_plan (from UTCT training.png). When predicting race times, compare similar
+  distance/vert runs in the data, note fitness trends, and reference plan targets where helpful.
+  UTCT is the A-race (22 Nov 2026, ~4h15 top-10 target).
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
@@ -111,6 +115,15 @@ def _openai_client():
 
     reload_env()
     return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+def load_utct_training_plan() -> dict[str, Any]:
+    if not UTCT_TRAINING_PLAN_PATH.is_file():
+        return {}
+    try:
+        return json.loads(UTCT_TRAINING_PLAN_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def _parse_run_date(value: str | None) -> str | None:
@@ -264,7 +277,8 @@ def build_training_summary(
         "context": {
             "athlete": "Rowan Davies",
             "upcoming_races": UPCOMING_RACES,
-            "focus_race": "UTCT 35 km (1,800 m climb, 22 November 2026, A-race, ~4h15m top-10 target)",
+            "focus_race": "UTCT 35 km (1,600 m climb, 22 November 2026, A-race, ~4h15 top-10 target)",
+            "utct_training_plan": load_utct_training_plan(),
         },
     }
 
@@ -390,6 +404,7 @@ def ask_coach(
 
     user_content = (
         f"QUESTION:\n{question}\n\n"
+        f"UTCT TRAINING PLAN (JSON):\n{json.dumps(training['context'].get('utct_training_plan') or {}, indent=2)}\n\n"
         f"TRAINING DATA (JSON):\n{json.dumps(training, indent=2)}"
     )
     if brief:
