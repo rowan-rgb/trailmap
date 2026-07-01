@@ -1125,6 +1125,10 @@
       const alpha = selected ? 0.98 : heatmapMode ? 0.72 : 0.85;
       const width = selected ? 6 : heatmapMode ? 4 : 4.5;
       drawPath(segment.path, color, alpha, width);
+      drawPathDirectionArrows(segment.path, color, alpha, {
+        spacingPx: selected ? 42 : 50,
+        arrowSize: selected ? 6 : 5,
+      });
     });
   }
 
@@ -1175,6 +1179,10 @@
       const path = getSegmentDisplayPath(selectedStravaSegmentId);
       if (path.length >= 2) {
         drawPath(path, STRAVA_SEGMENT_ACTIVE_COLOR, 0.95, 5);
+        drawPathDirectionArrows(path, STRAVA_SEGMENT_ACTIVE_COLOR, 0.95, {
+          spacingPx: 42,
+          arrowSize: 6,
+        });
       }
       return;
     }
@@ -2054,6 +2062,83 @@
     routeCtx.lineJoin = "round";
     routeCtx.lineCap = "round";
     routeCtx.stroke();
+  }
+
+  function drawArrowhead(x, y, angle, size, color, alpha) {
+    if (!routeCtx) return;
+    routeCtx.save();
+    routeCtx.translate(x, y);
+    routeCtx.rotate(angle);
+    routeCtx.fillStyle = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + alpha + ")";
+    routeCtx.beginPath();
+    routeCtx.moveTo(size, 0);
+    routeCtx.lineTo(-size * 0.65, size * 0.55);
+    routeCtx.lineTo(-size * 0.65, -size * 0.55);
+    routeCtx.closePath();
+    routeCtx.fill();
+    routeCtx.restore();
+  }
+
+  function drawPathDirectionArrows(path, color, alpha, options) {
+    if (!routeCtx || !path || path.length < 2) return;
+
+    const spacingPx = (options && options.spacingPx) || 48;
+    const arrowSize = (options && options.arrowSize) || 5;
+    const minPathPx = (options && options.minPathPx) || 28;
+
+    const projected = [];
+    for (let i = 0; i < path.length; i += 1) {
+      const pt = projectPoint(path[i][0], path[i][1]);
+      if (pt) projected.push(pt);
+    }
+    if (projected.length < 2) return;
+
+    let totalPx = 0;
+    for (let i = 0; i < projected.length - 1; i += 1) {
+      totalPx += Math.hypot(
+        projected[i + 1].x - projected[i].x,
+        projected[i + 1].y - projected[i].y
+      );
+    }
+    if (totalPx < minPathPx) {
+      const a = projected[0];
+      const b = projected[projected.length - 1];
+      drawArrowhead(
+        (a.x + b.x) / 2,
+        (a.y + b.y) / 2,
+        Math.atan2(b.y - a.y, b.x - a.x),
+        arrowSize,
+        color,
+        alpha
+      );
+      return;
+    }
+
+    let distSinceLastArrow = spacingPx * 0.35;
+    for (let i = 0; i < projected.length - 1; i += 1) {
+      const a = projected[i];
+      const b = projected[i + 1];
+      const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+      if (segLen < 0.5) continue;
+
+      const angle = Math.atan2(b.y - a.y, b.x - a.x);
+      let segPos = 0;
+      while (distSinceLastArrow + (segLen - segPos) >= spacingPx) {
+        const need = spacingPx - distSinceLastArrow;
+        segPos += need;
+        const t = segPos / segLen;
+        drawArrowhead(
+          a.x + (b.x - a.x) * t,
+          a.y + (b.y - a.y) * t,
+          angle,
+          arrowSize,
+          color,
+          alpha
+        );
+        distSinceLastArrow = 0;
+      }
+      distSinceLastArrow += segLen - segPos;
+    }
   }
 
   function drawRoutes(snapshot) {
