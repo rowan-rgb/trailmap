@@ -57,7 +57,7 @@ Rules:
 - Compare actual loaded runs against the plan where relevant: volume, vert, key sessions, and readiness
   for benchmark races and UTCT. Say clearly when the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
-- Be concise but complete: two or three short paragraphs, 200–300 words total.
+- Be concise but complete: two or three short paragraphs, 250–375 words total.
   No filler or repeating the question. Lead with the key number or verdict.
 - Rowan has upcoming target races in context.upcoming_races and a detailed UTCT build-up plan in
   context.utct_training_plan (from UTCT training.png). When predicting race times, compare similar
@@ -66,7 +66,7 @@ Rules:
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
-  "answer": "two or three short paragraphs, 200–300 words total",
+  "answer": "two or three short paragraphs, 250–375 words total",
   "plots": [
     {
       "title": "Chart title",
@@ -488,7 +488,7 @@ def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
     return clean
 
 
-def _trim_answer(text: str, max_words: int = 300) -> str:
+def _trim_answer(text: str, max_words: int = 375) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
@@ -528,8 +528,8 @@ def ask_coach(
 
     client = _openai_client()
     model = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
-    max_words = 110 if brief else 300
-    max_completion_tokens = 440 if brief else 840
+    max_words = 138 if brief else 375
+    max_completion_tokens = 550 if brief else 1050
 
     user_content = (
         f"QUESTION:\n{question}\n\n"
@@ -538,7 +538,7 @@ def ask_coach(
     )
     if brief:
         user_content += (
-            "\n\nBRIEF MODE: Reply in at most 3–4 short sentences (~80–110 words). "
+            "\n\nBRIEF MODE: Reply in at most 3–4 short sentences (~100–138 words). "
             "Give a predicted finish time range only. Skip long training recap. "
             "Use 0 or 1 chart maximum."
         )
