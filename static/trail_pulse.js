@@ -1786,10 +1786,10 @@
     if (appConfig.public_demo) return "";
     return (
       '<div class="utct-coach trail-coach">' +
-      '<div class="hud-dim"># ask AI about these runs</div>' +
+      '<div class="hud-dim"># ask coach about these runs</div>' +
       '<textarea id="coach-question" class="trail-coach__input" rows="3" placeholder="e.g. Is vert building toward UTCT? Plot weekly elevation gain."></textarea>' +
       '<div class="trail-coach__actions">' +
-      '<button type="button" class="btn-primary" id="coach-submit-btn">ask AI</button>' +
+      '<button type="button" class="btn-primary" id="coach-submit-btn">ask coach</button>' +
       "</div>" +
       renderCoachRaceButtons() +
       '<div class="hud-dim trail-coach__hint">answers use loaded runs only · can include simple charts</div>' +
