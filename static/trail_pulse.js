@@ -78,7 +78,7 @@
     {
       id: "utct",
       label: "UTCT (A-race)",
-      question: "UTCT 35 km / 1,800 m — 22 Nov 2026 (A-race). Predicted finish time range for top-10 (~4h15)?",
+      question: "UTCT 35 km / 1,600 m — 22 Nov 2026 (A-race). Predicted finish time range for top-10 (~4h15)?",
     },
   ];
 
