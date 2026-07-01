@@ -1153,11 +1153,32 @@
     showRouteCanvas();
     routeCtx.clearRect(0, 0, routeCanvas.width, routeCanvas.height);
 
-    timelineState.runs.forEach(function (run) {
-      drawPath(run.path, [130, 130, 130], 0.16, 2);
+    if (!densityEdges) densityEdges = buildRouteDensity(timelineState.runs);
+    const edges = Array.from(densityEdges.values());
+    const maxCount = Math.max(
+      1,
+      edges.reduce(function (m, edge) {
+        return Math.max(m, edge.count);
+      }, 1)
+    );
+
+    edges.forEach(function (edge) {
+      drawHeatmapSegment(edge.p1, edge.p2, edge.count, maxCount, false);
     });
 
-    drawStravaSegmentOverlays();
+    if (selectedStravaSegmentId) {
+      const highlightedRuns = {};
+      getStravaSegmentEfforts(selectedStravaSegmentId).forEach(function (effort) {
+        highlightedRuns[effort.runIndex] = true;
+      });
+      Object.keys(highlightedRuns).forEach(function (runIndex) {
+        const run = timelineState.runs[Number(runIndex)];
+        if (!run) return;
+        for (let i = 0; i < run.path.length - 1; i += 1) {
+          drawHeatmapSegment(run.path[i], run.path[i + 1], maxCount, maxCount, true);
+        }
+      });
+    }
   }
 
   function renderHeatmapSegmentDetail(segmentId) {
@@ -1278,7 +1299,7 @@
       segmentGeometryStatusHtml() +
       '<div class="hud-dim"># segments · ' +
       listSegments.length +
-      " · sorted by # runs · click purple segment on map or list · pace over time below</div>" +
+      " · sorted by # runs · pick a segment below · map shows run heatmap · pace over time below</div>" +
       '<div class="analysis-list">' +
       listSegments
         .map(function (segment) {
@@ -1348,7 +1369,21 @@
     }
 
     const segment = findStravaSegmentRecord(selectedStravaSegmentId);
-    if (segment && segment.path && segment.path.length >= 2) {
+    if (segmentAnalysisMode && timelineState) {
+      const effortRuns = getStravaSegmentEfforts(selectedStravaSegmentId)
+        .map(function (effort) {
+          return timelineState.runs[effort.runIndex];
+        })
+        .filter(Boolean);
+      if (effortRuns.length) {
+        flyToBounds(boundsForRuns(effortRuns), 700, 16, 0.1);
+      } else if (segment && segment.path && segment.path.length >= 2) {
+        flyToBounds(boundsForPath(segment.path), 700, 16, 0.1);
+      }
+      window.setTimeout(function () {
+        if (segmentAnalysisMode) drawSegmentAnalysisMap();
+      }, 450);
+    } else if (segment && segment.path && segment.path.length >= 2) {
       flyToBounds(boundsForPath(segment.path), 700, 16, 0.1);
       window.setTimeout(function () {
         if (segmentAnalysisMode) drawSegmentAnalysisMap();
@@ -1674,6 +1709,7 @@
     selectedStravaSegmentId = null;
     stravaSegments = [];
     stravaSegmentEffortsIndex = null;
+    densityEdges = null;
     heatmapMode = false;
     runDetailMode = false;
     runExplorerIndex = -1;
@@ -1693,6 +1729,7 @@
 
     timelineState.summary = payload.summary;
     loadedRunsPayload = payload;
+    densityEdges = buildRouteDensity(timelineState.runs);
 
     await fetchAppConfig();
 
@@ -1702,7 +1739,7 @@
       '<div id="segment-summary" class="hud-dim">' +
       timelineState.runs.length +
       " runs</div>" +
-      '<div class="hud-dim" style="margin-top:8px">click purple segment on map · pace over time below</div>' +
+      '<div class="hud-dim" style="margin-top:8px">map · run frequency heatmap · pick a segment below for pace chart</div>' +
       '<div id="segment-analysis-list"></div>' +
       '<button type="button" class="btn-secondary" id="switch-timeline-btn" style="display:block;width:100%;margin-top:8px">→ timeline</button>' +
       renderCoachBlock() +
@@ -1787,7 +1824,8 @@
   }
 
   function handleRouteOverlayClick(x, y) {
-    if (segmentAnalysisMode || (heatmapMode && stravaSegments.length)) {
+    if (segmentAnalysisMode) return;
+    if (heatmapMode && stravaSegments.length) {
       const segment = findStravaSegmentAtCanvasPoint(x, y);
       if (segment) {
         selectStravaSegment(segment.id);
