@@ -45,11 +45,7 @@ UPCOMING_RACES = [
     },
 ]
 
-UTCT_QUESTION = (
-    "Predict my finish time for UTCT 35 km (1,800 m climb, 22 November 2026) — my A-race. "
-    "Based on loaded training, give a realistic time range and what would need to shift "
-    "to hit ~4h15 top-10 pace. Include a chart if helpful."
-)
+UTCT_QUESTION = "UTCT 35 km / 1,800 m — 22 Nov 2026 (A-race). Predicted finish time range for top-10 (~4h15)?"
 
 SYSTEM_PROMPT = """You are a direct, slightly witty trail-running coach reviewing Rowan Davies's Strava training.
 The user asks questions about the runs they loaded for a chosen date range.
@@ -58,15 +54,15 @@ Rules:
 - Answer ONLY from the TRAINING DATA JSON. Do not invent runs, dates, or metrics.
 - Say clearly if the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
-- Be extremely concise: one short paragraph, 50–75 words maximum.
-  No filler, no repeating the question, no intros, no bullet lists. Lead with the key number or verdict.
+- Be concise but complete: one or two short paragraphs, 100–150 words total.
+  No filler or repeating the question. Lead with the key number or verdict.
 - Rowan has upcoming target races in context.upcoming_races. When predicting race times, compare similar
   distance/vert runs in the data, note fitness trends, and give a realistic finish-time range with clear
   uncertainty. UTCT is the A-race.
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
-  "answer": "one short paragraph, 50–75 words maximum",
+  "answer": "one or two short paragraphs, 100–150 words total",
   "plots": [
     {
       "title": "Chart title",
@@ -349,7 +345,7 @@ def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
     return clean
 
 
-def _trim_answer(text: str, max_words: int = 75) -> str:
+def _trim_answer(text: str, max_words: int = 150) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
@@ -368,6 +364,7 @@ def ask_coach(
     summary: dict[str, Any] | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
+    brief: bool = False,
 ) -> dict[str, Any]:
     reload_env()
     if not is_configured():
@@ -388,21 +385,28 @@ def ask_coach(
 
     client = _openai_client()
     model = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
+    max_words = 55 if brief else 150
+    max_tokens = 220 if brief else 420
+
+    user_content = (
+        f"QUESTION:\n{question}\n\n"
+        f"TRAINING DATA (JSON):\n{json.dumps(training, indent=2)}"
+    )
+    if brief:
+        user_content += (
+            "\n\nBRIEF MODE: Reply in at most 2 short sentences (~40–55 words). "
+            "Give a predicted finish time range only. Skip training recap and long caveats. "
+            "Use 0 or 1 chart maximum."
+        )
 
     response = client.chat.completions.create(
         model=model,
         temperature=_chat_temperature(),
-        max_tokens=280,
+        max_tokens=max_tokens,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    f"QUESTION:\n{question}\n\n"
-                    f"TRAINING DATA (JSON):\n{json.dumps(training, indent=2)}"
-                ),
-            },
+            {"role": "user", "content": user_content},
         ],
     )
 
@@ -412,14 +416,18 @@ def ask_coach(
     except json.JSONDecodeError as exc:
         payload = {"answer": raw, "plots": []}
 
-    answer = _trim_answer(str(payload.get("answer") or "").strip())
+    answer = _trim_answer(str(payload.get("answer") or "").strip(), max_words=max_words)
     if not answer:
-        answer = _trim_answer(raw)
+        answer = _trim_answer(raw, max_words=max_words)
+
+    plots = _sanitize_plots(payload.get("plots"))
+    if brief:
+        plots = plots[:1]
 
     return {
         "question": question,
         "answer": answer,
-        "plots": _sanitize_plots(payload.get("plots")),
+        "plots": plots,
         "model": model,
         "run_count": len(runs),
         "date_range": training["date_range"],
@@ -439,4 +447,5 @@ def utct_opinion(
         summary=summary,
         start_date=start_date,
         end_date=end_date,
+        brief=True,
     )

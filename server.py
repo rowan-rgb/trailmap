@@ -420,6 +420,7 @@ def trail_coach_chat():
             summary=data.get("summary"),
             start_date=data.get("start_date"),
             end_date=data.get("end_date"),
+            brief=bool(data.get("brief")),
         )
     except ValueError as exc:
         return jsonify({"message": str(exc)}), 400

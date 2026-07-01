@@ -63,26 +63,22 @@
     {
       id: "bastille-day",
       label: "Bastille Day",
-      question:
-        "Predict my finish time for Bastille Day (35 km, 1,350 m climb, 11 July 2026) based on my loaded training. Give a realistic range, note gaps in the data, and include a chart if it helps.",
+      question: "Bastille Day 35 km / 1,350 m — 11 Jul 2026. Predicted finish time range?",
     },
     {
       id: "twin-peaks",
       label: "Twin Peaks",
-      question:
-        "Predict my finish time for Twin Peaks (30 km, 1,600 m climb, 3 October 2026) based on my loaded training. Give a realistic range, note gaps in the data, and include a chart if it helps.",
+      question: "Twin Peaks 30 km / 1,600 m — 3 Oct 2026. Predicted finish time range?",
     },
     {
       id: "cape-cobra",
       label: "Cape Cobra",
-      question:
-        "Predict my finish time for Cape Cobra (42 km, 2,200 m climb, 24 October 2026) based on my loaded training. Give a realistic range, note gaps in the data, and include a chart if it helps.",
+      question: "Cape Cobra 42 km / 2,200 m — 24 Oct 2026. Predicted finish time range?",
     },
     {
       id: "utct",
       label: "UTCT (A-race)",
-      question:
-        "Predict my finish time for UTCT 35 km (1,800 m climb, 22 November 2026) — my A-race. Based on loaded training, give a realistic time range and what would need to shift to hit ~4h15 top-10 pace. Include a chart if helpful.",
+      question: "UTCT 35 km / 1,800 m — 22 Nov 2026 (A-race). Predicted finish time range for top-10 (~4h15)?",
     },
   ];
 
@@ -413,7 +409,7 @@
       }
       const raceBtn = event.target.closest(".coach-race-btn[data-race-question]");
       if (raceBtn) {
-        submitCoachQuestion(raceBtn.getAttribute("data-race-question"));
+        submitCoachQuestion(raceBtn.getAttribute("data-race-question"), { brief: true });
         return;
       }
       const card = event.target.closest(".run-card[data-run-index]");
@@ -1686,7 +1682,8 @@
     );
   }
 
-  async function submitCoachQuestion(forcedQuestion) {
+  async function submitCoachQuestion(forcedQuestion, options) {
+    options = options || {};
     if (!loadedRunsPayload || !loadedRunsPayload.runs.length) return;
 
     const inputEl = document.getElementById("coach-question");
@@ -1708,6 +1705,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: question,
+          brief: !!options.brief,
           start_date: loadedRunsPayload.start_date,
           end_date: loadedRunsPayload.end_date,
           summary: loadedRunsPayload.summary,
