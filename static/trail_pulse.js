@@ -1500,6 +1500,98 @@
     return html;
   }
 
+  function inferCoachDatasetAxis(dataset) {
+    const explicit = String(dataset.y_axis || dataset.yAxis || "").toLowerCase();
+    if (explicit === "distance" || explicit === "elevation" || explicit === "pace") {
+      return explicit;
+    }
+    const text = String(dataset.label || "").toLowerCase();
+    if (/elev|vert|gain|climb|altitude/.test(text) && !/km|pace|min/.test(text)) {
+      return "elevation";
+    }
+    if (/distance|\bkm\b|kilomet/.test(text)) return "distance";
+    if (/pace|min\/km|min-km/.test(text)) return "pace";
+    return "default";
+  }
+
+  function buildCoachChartScales(datasetAxes) {
+    const used = {};
+    datasetAxes.forEach(function (axis) {
+      used[axis] = true;
+    });
+
+    const scales = {
+      x: {
+        ticks: { maxRotation: 45, minRotation: 0, font: { size: 8 }, maxTicksLimit: 8 },
+      },
+    };
+
+    const axisTitle = { font: { size: 8 } };
+    const axisTicks = { font: { size: 8 } };
+
+    if (used.distance && used.elevation) {
+      scales.y = {
+        type: "linear",
+        position: "left",
+        beginAtZero: true,
+        title: { display: true, text: "distance (km)", ...axisTitle },
+        ticks: axisTicks,
+      };
+      scales.y1 = {
+        type: "linear",
+        position: "right",
+        beginAtZero: true,
+        title: { display: true, text: "elevation (m)", ...axisTitle },
+        ticks: axisTicks,
+        grid: { drawOnChartArea: false },
+      };
+      return scales;
+    }
+
+    if (used.pace && (used.distance || used.elevation)) {
+      scales.y = {
+        type: "linear",
+        position: "left",
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: used.distance ? "distance (km)" : "elevation (m)",
+          ...axisTitle,
+        },
+        ticks: axisTicks,
+      };
+      scales.y1 = {
+        type: "linear",
+        position: "right",
+        reverse: true,
+        beginAtZero: true,
+        title: { display: true, text: "pace (min/km)", ...axisTitle },
+        ticks: axisTicks,
+        grid: { drawOnChartArea: false },
+      };
+      return scales;
+    }
+
+    scales.y = { beginAtZero: true, ticks: axisTicks };
+    return scales;
+  }
+
+  function coachDatasetAxisId(axisKey, datasetAxes) {
+    const used = {};
+    datasetAxes.forEach(function (axis) {
+      used[axis] = true;
+    });
+    if (used.distance && used.elevation) {
+      if (axisKey === "elevation") return "y1";
+      if (axisKey === "distance") return "y";
+    }
+    if (used.pace && (used.distance || used.elevation)) {
+      if (axisKey === "pace") return "y1";
+      return "y";
+    }
+    return "y";
+  }
+
   function mountCoachPlots(plots) {
     destroyCoachCharts();
     if (!plots || !plots.length || typeof Chart === "undefined") return;
@@ -1509,8 +1601,11 @@
       if (!canvas) return;
 
       const chartType = plot.type || "bar";
-      const datasets = (plot.datasets || []).map(function (dataset) {
+      const datasetAxes = (plot.datasets || []).map(inferCoachDatasetAxis);
+      const scales = buildCoachChartScales(datasetAxes);
+      const datasets = (plot.datasets || []).map(function (dataset, dsIndex) {
         const color = dataset.color || "#fc4c02";
+        const axisKey = datasetAxes[dsIndex] || "default";
         const base = {
           label: dataset.label || "Series",
           data: dataset.data || [],
@@ -1521,6 +1616,7 @@
           pointRadius: chartType === "scatter" ? 4 : chartType === "line" ? 2 : 0,
           tension: 0.25,
           fill: chartType === "line",
+          yAxisID: coachDatasetAxisId(axisKey, datasetAxes),
         };
         return base;
       });
@@ -1540,15 +1636,7 @@
               labels: { boxWidth: 10, font: { size: 9 } },
             },
           },
-          scales: {
-            x: {
-              ticks: { maxRotation: 45, minRotation: 0, font: { size: 8 }, maxTicksLimit: 8 },
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { font: { size: 8 } },
-            },
-          },
+          scales: scales,
         },
       });
       coachCharts.push(chart);

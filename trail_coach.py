@@ -58,22 +58,23 @@ Rules:
 - Answer ONLY from the TRAINING DATA JSON. Do not invent runs, dates, or metrics.
 - Say clearly if the data cannot answer the question.
 - Tone: supportive, grounded, dry humour welcome.
-- Be very concise: about 30% shorter than a typical coach reply — target 80–120 words total.
-  No filler, no repeating the question, no long intros. Lead with the conclusion or key number.
+- Be extremely concise: one short paragraph, 50–75 words maximum.
+  No filler, no repeating the question, no intros, no bullet lists. Lead with the key number or verdict.
 - Rowan has upcoming target races in context.upcoming_races. When predicting race times, compare similar
   distance/vert runs in the data, note fitness trends, and give a realistic finish-time range with clear
   uncertainty. UTCT is the A-race.
 
 Return valid JSON (no markdown fences) with this exact shape:
 {
-  "answer": "1–2 short paragraphs, 80–120 words total",
+  "answer": "one short paragraph, 50–75 words maximum",
   "plots": [
     {
       "title": "Chart title",
       "type": "bar",
       "labels": ["label1", "label2"],
       "datasets": [
-        {"label": "Series name", "data": [1.0, 2.0], "color": "#fc4c02"}
+        {"label": "Distance (km)", "y_axis": "distance", "data": [1.0, 2.0], "color": "#fc4c02"},
+        {"label": "Elevation (m)", "y_axis": "elevation", "data": [100.0, 200.0], "color": "#8250df"}
       ]
     }
   ]
@@ -85,7 +86,9 @@ Plot rules:
 - All numbers in "data" must come from the training data (use precomputed series when provided).
 - Keep labels short (dates as YYYY-MM-DD or Mon DD).
 - Use hex colors: #fc4c02 (orange), #0550ae (blue), #2da44e (green), #8250df (purple).
-- Max 2 plots per reply."""
+- Max 2 plots per reply.
+- If a chart shows both distance (km) and elevation (m), use separate datasets each with
+  "y_axis": "distance" or "y_axis": "elevation". Never combine km and metres on one axis."""
 
 
 def reload_env() -> None:
@@ -314,13 +317,15 @@ def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
                 if not data:
                     continue
                 color = str(dataset.get("color") or palette[ds_index % len(palette)])
-                datasets_out.append(
-                    {
-                        "label": str(dataset.get("label") or f"Series {ds_index + 1}"),
-                        "data": data,
-                        "color": color,
-                    }
-                )
+                entry: dict[str, Any] = {
+                    "label": str(dataset.get("label") or f"Series {ds_index + 1}"),
+                    "data": data,
+                    "color": color,
+                }
+                y_axis = str(dataset.get("y_axis") or dataset.get("yAxis") or "").lower()
+                if y_axis in {"distance", "elevation", "pace"}:
+                    entry["y_axis"] = y_axis
+                datasets_out.append(entry)
 
         if not labels and not datasets_out:
             continue
@@ -342,6 +347,18 @@ def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
         )
 
     return clean
+
+
+def _trim_answer(text: str, max_words: int = 75) -> str:
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    trimmed = " ".join(words[:max_words])
+    for sep in (". ", "! ", "? "):
+        idx = trimmed.rfind(sep)
+        if idx > len(trimmed) * 0.45:
+            return trimmed[: idx + 1].strip()
+    return trimmed.rstrip(",;:") + "…"
 
 
 def ask_coach(
@@ -375,7 +392,7 @@ def ask_coach(
     response = client.chat.completions.create(
         model=model,
         temperature=_chat_temperature(),
-        max_tokens=450,
+        max_tokens=280,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -395,9 +412,9 @@ def ask_coach(
     except json.JSONDecodeError as exc:
         payload = {"answer": raw, "plots": []}
 
-    answer = str(payload.get("answer") or "").strip()
+    answer = _trim_answer(str(payload.get("answer") or "").strip())
     if not answer:
-        answer = raw
+        answer = _trim_answer(raw)
 
     return {
         "question": question,
