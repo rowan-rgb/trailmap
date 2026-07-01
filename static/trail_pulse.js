@@ -1126,8 +1126,8 @@
       const width = selected ? 6 : heatmapMode ? 4 : 4.5;
       drawPath(segment.path, color, alpha, width);
       drawPathDirectionArrows(segment.path, color, alpha, {
-        spacingPx: selected ? 42 : 50,
-        arrowSize: selected ? 6 : 5,
+        spacingPx: selected ? 48 : 56,
+        arrowSize: selected ? 10 : 8,
       });
     });
   }
@@ -1180,8 +1180,8 @@
       if (path.length >= 2) {
         drawPath(path, STRAVA_SEGMENT_ACTIVE_COLOR, 0.95, 5);
         drawPathDirectionArrows(path, STRAVA_SEGMENT_ACTIVE_COLOR, 0.95, {
-          spacingPx: 42,
-          arrowSize: 6,
+          spacingPx: 48,
+          arrowSize: 10,
         });
       }
       return;
@@ -2082,8 +2082,8 @@
   function drawPathDirectionArrows(path, color, alpha, options) {
     if (!routeCtx || !path || path.length < 2) return;
 
-    const spacingPx = (options && options.spacingPx) || 48;
-    const arrowSize = (options && options.arrowSize) || 5;
+    const spacingPx = (options && options.spacingPx) || 56;
+    const arrowSize = (options && options.arrowSize) || 8;
     const minPathPx = (options && options.minPathPx) || 28;
 
     const projected = [];
