@@ -1454,6 +1454,12 @@
         start_date: run.start_date,
         distance_km: run.distance_km,
         elevation_gain_m: run.elevation_gain_m,
+        duration_min:
+          run.duration_min != null
+            ? run.duration_min
+            : run.elapsed_s && run.elapsed_s.length
+              ? Math.round((run.elapsed_s[run.elapsed_s.length - 1] || 0) / 6) / 10
+              : null,
         average_heartrate: run.average_heartrate,
         max_heartrate: run.max_heartrate,
         elapsed_s: run.elapsed_s,
@@ -1588,6 +1594,56 @@
     return "y";
   }
 
+  function normalizeCoachScatterDatasets(plot) {
+    const raw = plot.datasets || [];
+    if (raw.length === 2) {
+      const first = raw[0].data || [];
+      const second = raw[1].data || [];
+      if (
+        first.length &&
+        second.length &&
+        typeof first[0] === "number" &&
+        typeof second[0] === "number"
+      ) {
+        const points = first
+          .map(function (x, index) {
+            const y = second[index];
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+            return { x: x, y: y };
+          })
+          .filter(Boolean);
+        if (points.length) {
+          return [
+            {
+              label: (raw[0].label || "X") + " vs " + (raw[1].label || "Y"),
+              data: points,
+              color: raw[0].color || "#0550ae",
+            },
+          ];
+        }
+      }
+    }
+
+    return raw.map(function (dataset) {
+      const points = (dataset.data || [])
+        .map(function (item) {
+          if (item && typeof item === "object" && item.x != null && item.y != null) {
+            const x = Number(item.x);
+            const y = Number(item.y);
+            if (Number.isFinite(x) && Number.isFinite(y)) return { x: x, y: y };
+          }
+          if (Array.isArray(item) && item.length >= 2) {
+            const x = Number(item[0]);
+            const y = Number(item[1]);
+            if (Number.isFinite(x) && Number.isFinite(y)) return { x: x, y: y };
+          }
+          return null;
+        })
+        .filter(Boolean);
+      return Object.assign({}, dataset, { data: points });
+    });
+  }
+
   function mountCoachPlots(plots) {
     destroyCoachCharts();
     if (!plots || !plots.length || typeof Chart === "undefined") return;
@@ -1597,40 +1653,100 @@
       if (!canvas) return;
 
       const chartType = plot.type || "bar";
-      const datasetAxes = (plot.datasets || []).map(inferCoachDatasetAxis);
-      const scales = buildCoachChartScales(datasetAxes);
-      const datasets = (plot.datasets || []).map(function (dataset, dsIndex) {
-        const color = dataset.color || "#fc4c02";
-        const axisKey = datasetAxes[dsIndex] || "default";
-        const base = {
-          label: dataset.label || "Series",
-          data: dataset.data || [],
-          borderColor: color,
-          backgroundColor: chartType === "line" ? color + "33" : color + "bb",
-          borderWidth: chartType === "scatter" ? 0 : 2,
-          pointBackgroundColor: color,
-          pointRadius: chartType === "scatter" ? 4 : chartType === "line" ? 2 : 0,
-          tension: 0.25,
-          fill: chartType === "line",
-          yAxisID: coachDatasetAxisId(axisKey, datasetAxes),
+      const axisFont = { size: 8 };
+      let scales;
+      let datasets;
+
+      if (chartType === "scatter") {
+        const scatterSets = normalizeCoachScatterDatasets(plot);
+        datasets = scatterSets.map(function (dataset) {
+          const color = dataset.color || "#0550ae";
+          return {
+            label: dataset.label || "Runs",
+            data: dataset.data || [],
+            borderColor: color,
+            backgroundColor: color + "cc",
+            borderWidth: 0,
+            pointBackgroundColor: color,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          };
+        });
+        scales = {
+          x: {
+            type: "linear",
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: plot.x_label || plot.xLabel || "distance (km)",
+              font: axisFont,
+            },
+            ticks: { font: axisFont },
+          },
+          y: {
+            type: "linear",
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: plot.y_label || plot.yLabel || "duration (min)",
+              font: axisFont,
+            },
+            ticks: { font: axisFont },
+          },
         };
-        return base;
-      });
+      } else {
+        const datasetAxes = (plot.datasets || []).map(inferCoachDatasetAxis);
+        scales = buildCoachChartScales(datasetAxes);
+        datasets = (plot.datasets || []).map(function (dataset, dsIndex) {
+          const color = dataset.color || "#fc4c02";
+          const axisKey = datasetAxes[dsIndex] || "default";
+          return {
+            label: dataset.label || "Series",
+            data: dataset.data || [],
+            borderColor: color,
+            backgroundColor: chartType === "line" ? color + "33" : color + "bb",
+            borderWidth: 2,
+            pointBackgroundColor: color,
+            pointRadius: chartType === "line" ? 2 : 0,
+            tension: 0.25,
+            fill: chartType === "line",
+            yAxisID: coachDatasetAxisId(axisKey, datasetAxes),
+          };
+        });
+      }
 
       const chart = new Chart(canvas.getContext("2d"), {
         type: chartType,
         data: {
-          labels: plot.labels || [],
+          labels: chartType === "scatter" ? undefined : plot.labels || [],
           datasets: datasets,
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          parsing: chartType === "scatter" ? false : undefined,
           plugins: {
             legend: {
               display: datasets.length > 1,
               labels: { boxWidth: 10, font: { size: 9 } },
             },
+            tooltip: chartType === "scatter"
+              ? {
+                  callbacks: {
+                    label: function (context) {
+                      const point = context.raw || {};
+                      return (
+                        (context.dataset.label || "Run") +
+                        ": " +
+                        Number(point.x).toFixed(1) +
+                        " km · " +
+                        Number(point.y).toFixed(0) +
+                        " min"
+                      );
+                    },
+                  },
+                }
+              : undefined,
           },
           scales: scales,
         },

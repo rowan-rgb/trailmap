@@ -88,7 +88,10 @@ Plot rules:
 - Use hex colors: #fc4c02 (orange), #0550ae (blue), #2da44e (green), #8250df (purple).
 - Max 2 plots per reply.
 - If a chart shows both distance (km) and elevation (m), use separate datasets each with
-  "y_axis": "distance" or "y_axis": "elevation". Never combine km and metres on one axis."""
+  "y_axis": "distance" or "y_axis": "elevation". Never combine km and metres on one axis.
+- For distance vs duration scatter plots, use type "scatter" with ONE dataset and points from
+  series.distance_duration_points: "data": [{"x": 12.5, "y": 95.0}, ...] where x=distance_km,
+  y=duration_min. Set "x_label": "distance (km)" and "y_label": "duration (min)"."""
 
 
 def reload_env() -> None:
@@ -272,6 +275,16 @@ def build_training_summary(
             "by_date": by_date,
             "weekly": _weekly_series(compact),
             "monthly": _monthly_series(compact),
+            "distance_duration_points": [
+                {
+                    "x": run["distance_km"],
+                    "y": run["duration_min"],
+                    "label": run.get("name"),
+                    "date": run.get("date"),
+                }
+                for run in compact
+                if (run.get("distance_km") or 0) > 0 and (run.get("duration_min") or 0) > 0
+            ],
         },
         "runs": compact,
         "context": {
@@ -289,6 +302,98 @@ def _parse_json_response(raw: str) -> dict[str, Any]:
     if fence:
         text = fence.group(1).strip()
     return json.loads(text)
+
+
+def _parse_scatter_point(value: Any) -> dict[str, float] | None:
+    if isinstance(value, dict):
+        x_raw = value.get("x")
+        y_raw = value.get("y")
+        if x_raw is None or y_raw is None:
+            return None
+        try:
+            return {"x": round(float(x_raw), 2), "y": round(float(y_raw), 2)}
+        except (TypeError, ValueError):
+            return None
+    if isinstance(value, (list, tuple)) and len(value) >= 2:
+        try:
+            return {"x": round(float(value[0]), 2), "y": round(float(value[1]), 2)}
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _parse_numeric_series(data_raw: list[Any]) -> list[float]:
+    data: list[float] = []
+    for value in data_raw[:40]:
+        try:
+            data.append(round(float(value), 2))
+        except (TypeError, ValueError):
+            continue
+    return data
+
+
+def _merge_scatter_datasets(datasets: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if len(datasets) != 2:
+        return datasets
+    first, second = datasets[0], datasets[1]
+    first_data = first.get("data") or []
+    second_data = second.get("data") or []
+    if not first_data or not isinstance(first_data[0], (int, float)):
+        return datasets
+    if not second_data or not isinstance(second_data[0], (int, float)):
+        return datasets
+
+    points: list[dict[str, float]] = []
+    for x_val, y_val in zip(first_data, second_data):
+        try:
+            points.append({"x": round(float(x_val), 2), "y": round(float(y_val), 2)})
+        except (TypeError, ValueError):
+            continue
+    if not points:
+        return datasets
+
+    return [
+        {
+            "label": f"{first.get('label', 'X')} vs {second.get('label', 'Y')}",
+            "data": points,
+            "color": first.get("color") or "#0550ae",
+        }
+    ]
+
+
+def _scatter_point_count(plot: dict[str, Any]) -> int:
+    total = 0
+    for dataset in plot.get("datasets") or []:
+        for point in dataset.get("data") or []:
+            if isinstance(point, dict) and point.get("x") is not None and point.get("y") is not None:
+                total += 1
+    return total
+
+
+def _build_distance_duration_scatter(compact_runs: list[dict[str, Any]]) -> dict[str, Any]:
+    points = [
+        {"x": run["distance_km"], "y": run["duration_min"]}
+        for run in compact_runs
+        if (run.get("distance_km") or 0) > 0 and (run.get("duration_min") or 0) > 0
+    ]
+    return {
+        "title": "Distance vs duration",
+        "type": "scatter",
+        "labels": [],
+        "x_label": "distance (km)",
+        "y_label": "duration (min)",
+        "datasets": [{"label": "Runs", "data": points, "color": "#0550ae"}],
+    }
+
+
+def _repair_coach_plots(plots: list[dict[str, Any]], compact_runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    repaired: list[dict[str, Any]] = []
+    for plot in plots:
+        if plot.get("type") == "scatter" and _scatter_point_count(plot) == 0:
+            repaired.append(_build_distance_duration_scatter(compact_runs))
+            continue
+        repaired.append(plot)
+    return repaired
 
 
 def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
@@ -318,14 +423,21 @@ def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
                 data_raw = dataset.get("data") or []
                 if not isinstance(data_raw, list):
                     continue
-                data: list[float] = []
-                for value in data_raw[:40]:
-                    try:
-                        data.append(round(float(value), 2))
-                    except (TypeError, ValueError):
+
+                if chart_type == "scatter":
+                    points: list[dict[str, float]] = []
+                    for value in data_raw[:40]:
+                        point = _parse_scatter_point(value)
+                        if point:
+                            points.append(point)
+                    if not points:
                         continue
-                if not data:
-                    continue
+                    data: list[Any] = points
+                else:
+                    data = _parse_numeric_series(data_raw)
+                    if not data:
+                        continue
+
                 color = str(dataset.get("color") or palette[ds_index % len(palette)])
                 entry: dict[str, Any] = {
                     "label": str(dataset.get("label") or f"Series {ds_index + 1}"),
@@ -337,8 +449,25 @@ def _sanitize_plots(plots: Any) -> list[dict[str, Any]]:
                     entry["y_axis"] = y_axis
                 datasets_out.append(entry)
 
+        if chart_type == "scatter":
+            datasets_out = _merge_scatter_datasets(datasets_out)
+
         if not labels and not datasets_out:
             continue
+
+        if chart_type == "scatter":
+            clean.append(
+                {
+                    "title": str(plot.get("title") or f"Chart {index + 1}"),
+                    "type": chart_type,
+                    "labels": [],
+                    "x_label": str(plot.get("x_label") or plot.get("xLabel") or "distance (km)"),
+                    "y_label": str(plot.get("y_label") or plot.get("yLabel") or "duration (min)"),
+                    "datasets": datasets_out,
+                }
+            )
+            continue
+
         if labels and datasets_out:
             max_len = len(labels)
             for dataset in datasets_out:
@@ -438,6 +567,7 @@ def ask_coach(
     plots = _sanitize_plots(payload.get("plots"))
     if brief:
         plots = plots[:1]
+    plots = _repair_coach_plots(plots, training["runs"])
 
     return {
         "question": question,
