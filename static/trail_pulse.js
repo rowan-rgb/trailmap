@@ -66,6 +66,11 @@
       question: "Bastille Day 35 km / 1,350 m — 11 Jul 2026. Predicted finish time range?",
     },
     {
+      id: "whale-of-trail",
+      label: "Whale of Trail",
+      question: "Whale of Trail 37 km / 1,200 m — 15 Aug 2026. Predicted finish time range?",
+    },
+    {
       id: "twin-peaks",
       label: "Twin Peaks",
       question: "Twin Peaks 30 km / 1,600 m — 3 Oct 2026. Predicted finish time range?",

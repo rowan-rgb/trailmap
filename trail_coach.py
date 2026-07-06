@@ -23,6 +23,14 @@ UPCOMING_RACES = [
         "priority": "B",
     },
     {
+        "name": "Whale of Trail",
+        "distance_km": 37,
+        "elevation_m": 1200,
+        "date": "2026-08-15",
+        "priority": "B",
+        "notes": "sub 5h00 target",
+    },
+    {
         "name": "Twin Peaks",
         "distance_km": 30,
         "elevation_m": 1600,
