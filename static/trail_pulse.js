@@ -102,12 +102,22 @@
   const STRAVA_SEGMENT_ACTIVE_COLOR = [252, 76, 2];
   const SEGMENT_ANALYSIS_RUN_COLOR = [5, 80, 174];
 
+  function formatInputDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return year + "-" + month + "-" + day;
+  }
+
   function defaultEndDate() {
-    return "2026-06-30";
+    return formatInputDate(new Date());
   }
 
   function defaultStartDate() {
-    return "2026-06-01";
+    const end = new Date();
+    const start = new Date(end);
+    start.setMonth(start.getMonth() - 6);
+    return formatInputDate(start);
   }
 
   function formatTimelineDate(ms) {
